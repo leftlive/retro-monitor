@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Retro Monitor",
+        "description": "Configure the local telemetry agent endpoint.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "scan_interval": "Scan interval"
+        }
+      }
+    }
+  }
+}
+

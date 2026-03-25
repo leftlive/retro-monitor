@@ -1,0 +1,14 @@
+{
+  "domain": "retro_monitor",
+  "name": "Retro Monitor",
+  "version": "0.1.0",
+  "documentation": "https://example.invalid/retro-monitor",
+  "issue_tracker": "https://example.invalid/retro-monitor/issues",
+  "config_flow": true,
+  "requirements": [],
+  "codeowners": [
+    "@ian"
+  ],
+  "iot_class": "local_polling"
+}
+

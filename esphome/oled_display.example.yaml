@@ -1,0 +1,137 @@
+substitutions:
+  devicename: retro-monitor-display
+  friendly_name: Retro Monitor Display
+  ha_cpu_temp: sensor.retro_monitor_cpu_temperature
+  ha_cpu_load: sensor.retro_monitor_cpu_load
+  ha_gpu_temp: sensor.retro_monitor_gpu_temperature
+  ha_gpu_load: sensor.retro_monitor_gpu_load
+  ha_memory_percent: sensor.retro_monitor_memory_percent
+  ha_net_up: sensor.retro_monitor_net_upload
+  ha_net_down: sensor.retro_monitor_net_download
+  ha_source_ok: binary_sensor.retro_monitor_source_ok
+  ha_display_mode: select.oled_display_mode
+  ha_page_interval: number.oled_page_interval
+  ha_brightness: number.oled_brightness
+  ha_auto_rotate: switch.oled_auto_rotate
+
+esphome:
+  name: ${devicename}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+time:
+  - platform: homeassistant
+    id: ha_time
+
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+globals:
+  - id: current_page
+    type: int
+    initial_value: "0"
+  - id: last_page_switch_ms
+    type: unsigned long
+    initial_value: "0"
+
+sensor:
+  - platform: homeassistant
+    id: cpu_temp
+    entity_id: ${ha_cpu_temp}
+  - platform: homeassistant
+    id: cpu_load
+    entity_id: ${ha_cpu_load}
+  - platform: homeassistant
+    id: gpu_temp
+    entity_id: ${ha_gpu_temp}
+  - platform: homeassistant
+    id: gpu_load
+    entity_id: ${ha_gpu_load}
+  - platform: homeassistant
+    id: memory_percent
+    entity_id: ${ha_memory_percent}
+  - platform: homeassistant
+    id: net_up
+    entity_id: ${ha_net_up}
+  - platform: homeassistant
+    id: net_down
+    entity_id: ${ha_net_down}
+  - platform: homeassistant
+    id: page_interval
+    entity_id: ${ha_page_interval}
+  - platform: homeassistant
+    id: oled_brightness
+    entity_id: ${ha_brightness}
+
+binary_sensor:
+  - platform: homeassistant
+    id: source_ok
+    entity_id: ${ha_source_ok}
+  - platform: homeassistant
+    id: auto_rotate
+    entity_id: ${ha_auto_rotate}
+
+text_sensor:
+  - platform: homeassistant
+    id: display_mode
+    entity_id: ${ha_display_mode}
+
+font:
+  - file: "gfonts://IBM Plex Mono"
+    id: font_small
+    size: 12
+  - file: "gfonts://IBM Plex Mono"
+    id: font_large
+    size: 20
+
+# Validate the exact SSD1322 display platform name against your ESPHome version
+# before first hardware compile. The rendering lambda is ready to reuse.
+display:
+  - platform: ssd1322_spi
+    id: oled
+    model: "256x64"
+    cs_pin: GPIO5
+    dc_pin: GPIO16
+    reset_pin: GPIO17
+    lambda: |-
+      const bool rotate = id(auto_rotate).state;
+      const int interval_seconds = id(page_interval).has_state() ? (int) id(page_interval).state : 10;
+      const unsigned long now_ms = millis();
+      if (rotate && now_ms - id(last_page_switch_ms) > (unsigned long) interval_seconds * 1000UL) {
+        id(current_page) = (id(current_page) + 1) % 2;
+        id(last_page_switch_ms) = now_ms;
+      }
+
+      it.fill(COLOR_OFF);
+      it.printf(0, 0, id(font_small), COLOR_ON, "RETRO MONITOR");
+
+      if (!id(source_ok).state) {
+        it.printf(0, 18, id(font_large), COLOR_ON, "SOURCE OFFLINE");
+        return;
+      }
+
+      if (id(display_mode).state == "diagnostics" || id(current_page) == 1) {
+        it.printf(0, 18, id(font_small), COLOR_ON, "UP   %7.1f", id(net_up).state);
+        it.printf(0, 32, id(font_small), COLOR_ON, "DOWN %7.1f", id(net_down).state);
+        it.printf(0, 48, id(font_small), COLOR_ON, "MEM  %7.1f%%", id(memory_percent).state);
+      } else {
+        it.printf(0, 18, id(font_small), COLOR_ON, "CPU %5.1fC  %5.1f%%", id(cpu_temp).state, id(cpu_load).state);
+        it.printf(0, 36, id(font_small), COLOR_ON, "GPU %5.1fC  %5.1f%%", id(gpu_temp).state, id(gpu_load).state);
+        it.printf(0, 54, id(font_small), COLOR_ON, "MEM %5.1f%%", id(memory_percent).state);
+      }
