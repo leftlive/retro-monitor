@@ -116,6 +116,7 @@ Highest-value next absorptions:
 1. `system_power_estimated`
    - source templates: `Stats` power aggregation plus whichever system-total SMC keys are stable on target hardware
    - goal: use direct low-level sources first, and keep Intel Power Gadget only as an optional fallback path
+   - current finding on this machine: Intel Power Gadget package power works, but platform power is unavailable
 
 Fields already validated in the prototype:
 

@@ -41,6 +41,13 @@ Latest successful sample during validation:
 }
 ```
 
+Sampling model:
+
+- the agent now samples on a fixed background interval
+- `/telemetry` returns the latest cached snapshot
+- the current default sample interval is `0.5` seconds
+- request frequency no longer changes the sampling cadence
+
 ## What Is Actually Working
 
 Working now without shelling out to CLI tools:
@@ -70,6 +77,9 @@ Working now without shelling out to CLI tools:
 Still unresolved:
 
 - `system_power_estimated`
+  - optional Intel Power Gadget platform-power path is now wired in
+  - current machine still reports platform energy as unavailable, so direct whole-system power remains unavailable
+  - the agent now falls back to a conservative estimate: `cpu_power + gpu_power + 20W base`
 
 ## Reference Absorption
 
@@ -87,12 +97,14 @@ The current prototype has already absorbed these ideas:
   - delta-based sampling for disk and network activity
   - NVMe SMART access through `IONVMeSMARTInterface`
   - SMC power data type decoding such as `sp96`
+- from Intel Power Gadget:
+  - optional library-backed platform power path without shelling out to CLI tools
 
 ## Immediate Next Step
 
 Best next prototype improvement:
 
-- investigate whether `PSTR` / related system-total keys are stable enough to backfill `system_power_estimated`
+- investigate a reliable direct whole-system source for machines where both SMC `PSTR` and Intel Power Gadget platform energy are unavailable
 - target result:
   - fill `system_power_estimated` without introducing CLI dependencies
 

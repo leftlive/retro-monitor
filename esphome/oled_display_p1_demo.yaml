@@ -1,0 +1,236 @@
+substitutions:
+  devicename: retro-monitor-display
+  friendly_name: Retro Monitor Display
+  host_label: NOX V1.09
+  ha_cpu_temp: sensor.iandeimac_local_cpu_temperature
+  ha_cpu_load: sensor.iandeimac_local_cpu_load
+  ha_cpu_clock: sensor.iandeimac_local_cpu_clock
+  ha_cpu_power: sensor.iandeimac_local_cpu_power
+  ha_gpu_temp: sensor.iandeimac_local_gpu_temperature
+  ha_gpu_load: sensor.iandeimac_local_gpu_load
+  ha_gpu_clock: sensor.iandeimac_local_gpu_clock
+  ha_gpu_power: sensor.iandeimac_local_gpu_power
+  ha_memory_used: sensor.iandeimac_local_memory_used
+  ha_memory_total: sensor.iandeimac_local_memory_total
+  ha_memory_percent: sensor.iandeimac_local_memory_usage
+  ha_fan_rpm_max: sensor.iandeimac_local_fan_speed_max
+  ha_disk_temp_max: sensor.iandeimac_local_disk_temperature_max
+  ha_system_power: sensor.iandeimac_local_system_power_estimated
+  ha_source_ok: binary_sensor.iandeimac_local_data_source_ok
+
+esphome:
+  name: ${devicename}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+
+api:
+  homeassistant_states: true
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+# Current module wiring contract: SSD1322 16-pin board in 4SPI mode.
+# OLED pin 4 SCL -> GPIO18
+# OLED pin 5 SDA -> GPIO23
+# OLED pin 14 DC -> GPIO16
+# OLED pin 15 RES -> GPIO17
+# OLED pin 16 CS -> GPIO5
+# OLED pin 12 RD -> GND
+# OLED pin 13 WR -> GND
+# OLED pins 6-11 (D2-D7) left unconnected
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+sensor:
+  - platform: homeassistant
+    id: cpu_temp
+    entity_id: ${ha_cpu_temp}
+  - platform: homeassistant
+    id: cpu_load
+    entity_id: ${ha_cpu_load}
+  - platform: homeassistant
+    id: cpu_clock
+    entity_id: ${ha_cpu_clock}
+  - platform: homeassistant
+    id: cpu_power
+    entity_id: ${ha_cpu_power}
+  - platform: homeassistant
+    id: gpu_temp
+    entity_id: ${ha_gpu_temp}
+  - platform: homeassistant
+    id: gpu_load
+    entity_id: ${ha_gpu_load}
+  - platform: homeassistant
+    id: gpu_clock
+    entity_id: ${ha_gpu_clock}
+  - platform: homeassistant
+    id: gpu_power
+    entity_id: ${ha_gpu_power}
+  - platform: homeassistant
+    id: memory_used
+    entity_id: ${ha_memory_used}
+  - platform: homeassistant
+    id: memory_total
+    entity_id: ${ha_memory_total}
+  - platform: homeassistant
+    id: memory_percent
+    entity_id: ${ha_memory_percent}
+  - platform: homeassistant
+    id: fan_rpm_max
+    entity_id: ${ha_fan_rpm_max}
+  - platform: homeassistant
+    id: disk_temp_max
+    entity_id: ${ha_disk_temp_max}
+  - platform: homeassistant
+    id: system_power
+    entity_id: ${ha_system_power}
+
+binary_sensor:
+  - platform: homeassistant
+    id: source_ok
+    entity_id: ${ha_source_ok}
+
+font:
+  - file: "fonts/unscii-8.ttf"
+    id: font_header
+    size: 6
+  - file: "gfonts://IBM Plex Mono"
+    id: font_section
+    size: 9
+  - file: "fonts/MatrixSansScreen-Regular.ttf"
+    id: font_big_num
+    size: 26
+    glyphs: "0123456789"
+  - file: "gfonts://IBM Plex Mono"
+    id: font_stat
+    size: 8
+  - file: "gfonts://IBM Plex Mono"
+    id: font_micro
+    size: 8
+
+display:
+  - platform: ssd1322_spi
+    id: oled
+    model: "SSD1322_256X64"
+    cs_pin: GPIO5
+    dc_pin: GPIO16
+    reset_pin: GPIO17
+    update_interval: 200ms
+    lambda: |-
+      auto safe_value = [](float value) -> float {
+        return std::isnan(value) ? 0.0f : value;
+      };
+      auto gib = [&](float mib) -> float {
+        return safe_value(mib) / 1024.0f;
+      };
+      auto draw_big_number = [&](int x, int y, float value) -> int {
+        char buf[8];
+        snprintf(buf, sizeof(buf), "%.0f", value);
+        int cursor = x;
+        const int digit_step = 16;
+        for (const char *p = buf; *p; ++p) {
+          char glyph[2] = {*p, '\0'};
+          it.printf(cursor, y, id(font_big_num), COLOR_ON, "%s", glyph);
+          cursor += digit_step;
+        }
+        return cursor - x;
+      };
+      auto draw_progress_blocks = [&](int right_x, int y, float percent) {
+        const int block_w = 5;
+        const int block_h = 6;
+        const int block_gap = 1;
+        const int total = 12;
+        const float clamped = percent < 0.0f ? 0.0f : (percent > 100.0f ? 100.0f : percent);
+        const int filled = static_cast<int>(roundf((clamped / 100.0f) * total));
+        const int total_w = total * block_w + (total - 1) * block_gap;
+        int x = right_x - total_w;
+        for (int i = 0; i < total; i++) {
+          if (i < filled) {
+            it.filled_rectangle(x, y, block_w, block_h, COLOR_ON);
+          } else {
+            for (int px = 0; px < block_w; px++) {
+              for (int py = 0; py < block_h; py++) {
+                if (((px + py) % 2) == 0) {
+                  it.draw_pixel_at(x + px, y + py, COLOR_ON);
+                }
+              }
+            }
+          }
+          x += block_w + block_gap;
+        }
+      };
+
+      const int W = it.get_width();
+      const int left_x = 0;
+      const int mid_x = 86;
+      const int right_x = 172;
+      const int left_right = 80;
+      const int mid_right = 166;
+      const int right_right = 252;
+      const bool blink_on = (millis() / 500) % 2 == 0;
+
+      it.fill(COLOR_OFF);
+
+      it.printf(2, 0, id(font_header), COLOR_ON, "%s", "${host_label}");
+      it.printf(95, 0, id(font_header), COLOR_ON, "MAC PANEL");
+      it.printf(215, 0, id(font_header), COLOR_ON, id(source_ok).state ? "READY" : "ALERT");
+      if (blink_on) {
+        it.filled_rectangle(250, 1, 4, 4, COLOR_ON);
+      } else {
+        it.rectangle(250, 1, 4, 4, COLOR_ON);
+      }
+      it.line(0, 10, W, 10, COLOR_ON);
+      it.line(85, 11, 85, 63, COLOR_ON);
+      it.line(171, 11, 171, 63, COLOR_ON);
+
+      if (!id(source_ok).state) {
+        it.printf(84, 20, id(font_section), COLOR_ON, "SOURCE");
+        it.printf(94, 34, id(font_section), COLOR_ON, "OFF");
+        return;
+      }
+
+      const float cpu_temp_v = safe_value(id(cpu_temp).state);
+      const float cpu_load_v = safe_value(id(cpu_load).state);
+      const float cpu_power_v = safe_value(id(cpu_power).state);
+      const float fan_rpm_v = safe_value(id(fan_rpm_max).state);
+
+      const float mem_percent_v = safe_value(id(memory_percent).state);
+      const float mem_used_v = gib(id(memory_used).state);
+      const float mem_total_v = gib(id(memory_total).state);
+      const float disk_temp_v = safe_value(id(disk_temp_max).state);
+
+      const float gpu_temp_v = safe_value(id(gpu_temp).state);
+      const float gpu_load_v = safe_value(id(gpu_load).state);
+      const float sys_power_v = safe_value(id(system_power).state);
+
+      it.printf(left_x + 4, 16, id(font_section), COLOR_ON, "CPU");
+      const int cpu_digits_w = draw_big_number(left_x + 4, 25, cpu_temp_v);
+      it.printf(left_x + 6 + cpu_digits_w, 24, id(font_stat), COLOR_ON, "C");
+      it.printf(left_right, 31, id(font_stat), COLOR_ON, TextAlign::TOP_RIGHT, "LD %02.0f", cpu_load_v);
+      it.printf(left_right, 40, id(font_stat), COLOR_ON, TextAlign::TOP_RIGHT, "PW %03.0f", cpu_power_v);
+      draw_progress_blocks(left_right, 55, cpu_load_v);
+
+      it.printf(mid_x + 4, 16, id(font_section), COLOR_ON, "MEM");
+      const int mem_digits_w = draw_big_number(mid_x + 4, 25, mem_percent_v);
+      it.printf(mid_x + 6 + mem_digits_w, 24, id(font_stat), COLOR_ON, "%%");
+      it.printf(mid_right, 31, id(font_stat), COLOR_ON, TextAlign::TOP_RIGHT, "USE %.0fG", mem_used_v);
+      it.printf(mid_right, 40, id(font_stat), COLOR_ON, TextAlign::TOP_RIGHT, "DSK %02.0f", disk_temp_v);
+      draw_progress_blocks(mid_right, 55, mem_percent_v);
+
+      it.printf(right_x + 4, 16, id(font_section), COLOR_ON, "GPU");
+      const int gpu_digits_w = draw_big_number(right_x + 4, 25, gpu_temp_v);
+      it.printf(right_x + 6 + gpu_digits_w, 24, id(font_stat), COLOR_ON, "C");
+      it.printf(right_right, 31, id(font_stat), COLOR_ON, TextAlign::TOP_RIGHT, "LD %02.0f", gpu_load_v);
+      it.printf(right_right, 40, id(font_stat), COLOR_ON, TextAlign::TOP_RIGHT, "SY %03.0f", sys_power_v);
+      draw_progress_blocks(right_right, 55, gpu_load_v);

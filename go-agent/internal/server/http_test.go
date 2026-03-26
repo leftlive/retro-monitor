@@ -5,12 +5,17 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/ian/retro-monitor/go-agent/internal/provider"
 )
 
 func TestTelemetryEndpoint(t *testing.T) {
-	handler := NewHandler(provider.NewMockProvider())
+	sampler := NewSampler(provider.NewMockProvider(), 50*time.Millisecond)
+	if err := sampler.Start(); err != nil {
+		t.Fatalf("start sampler: %v", err)
+	}
+	handler := NewHandler(sampler)
 	req := httptest.NewRequest(http.MethodGet, "/telemetry", nil)
 	rec := httptest.NewRecorder()
 
@@ -27,5 +32,18 @@ func TestTelemetryEndpoint(t *testing.T) {
 
 	if payload["platform"] != "mock" {
 		t.Fatalf("unexpected platform: %v", payload["platform"])
+	}
+}
+
+func TestTelemetryEndpointUnavailableWithoutSnapshot(t *testing.T) {
+	sampler := NewSampler(provider.NewMockProvider(), time.Second)
+	handler := NewHandler(sampler)
+	req := httptest.NewRequest(http.MethodGet, "/telemetry", nil)
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("unexpected status: %d", rec.Code)
 	}
 }

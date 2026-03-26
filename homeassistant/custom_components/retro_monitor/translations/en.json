@@ -3,14 +3,21 @@
     "step": {
       "user": {
         "title": "Retro Monitor",
-        "description": "Configure the local telemetry agent endpoint.",
+        "description": "Configure the local telemetry agent endpoint. The integration will test the connection before saving.",
         "data": {
           "host": "Host",
           "port": "Port",
-          "scan_interval": "Scan interval"
+          "scan_interval": "Scan interval (seconds)"
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the telemetry agent. Please check the host and port.",
+      "invalid_response": "The endpoint responded but returned an invalid telemetry payload.",
+      "already_configured": "This agent endpoint is already configured."
+    },
+    "abort": {
+      "already_configured": "This agent endpoint is already configured."
     }
   }
 }
-

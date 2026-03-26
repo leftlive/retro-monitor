@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Retro Monitor",
+        "description": "配置本地遥测代理端点。集成会在保存前测试连接情况。",
+        "data": {
+          "host": "主机地址",
+          "port": "端口",
+          "scan_interval": "扫描间隔 (秒)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "无法连接到遥测代理。请检查主机地址和端口。",
+      "invalid_response": "端点响应了请求，但返回了无效的遥测数据 (Payload)。",
+      "already_configured": "该代理端点已配置过。"
+    },
+    "abort": {
+      "already_configured": "该代理端点已配置过。"
+    }
+  }
+}

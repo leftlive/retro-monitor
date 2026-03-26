@@ -1,5 +1,7 @@
 .pytest_cache/
 __pycache__/
+*.egg-info/
+go-agent/bin/
 *.pyc
 *.pyo
 .DS_Store
@@ -7,4 +9,3 @@ __pycache__/
 dist/
 build/
 references/
-

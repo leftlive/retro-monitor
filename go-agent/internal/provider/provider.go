@@ -10,6 +10,10 @@ type Provider interface {
 	Sample() (schema.Snapshot, error)
 }
 
+type Closer interface {
+	Close() error
+}
+
 func Build(name string) (Provider, error) {
 	switch name {
 	case "mock":
@@ -20,4 +24,3 @@ func Build(name string) (Provider, error) {
 		return nil, fmt.Errorf("unsupported provider: %s", name)
 	}
 }
-

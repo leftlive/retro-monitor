@@ -9,9 +9,12 @@ import psutil
 
 from retro_monitor_agent.apple_smc import AppleSMC
 from retro_monitor_agent.iokit import read_nvme_temperature_max, search_service_plane_property
+from retro_monitor_agent.intel_power_gadget import IntelPowerGadget
 from retro_monitor_agent.schema import TelemetrySnapshot, utc_now_iso
 
 from .base import TelemetryProvider
+
+_SYSTEM_BASE_POWER_WATTS = 20.0
 
 
 def _mib(value_bytes: int) -> float:
@@ -28,6 +31,18 @@ def _mean(values: List[float]) -> Optional[float]:
     if not values:
         return None
     return round(sum(values) / len(values), 1)
+
+
+def _estimate_system_power(
+    cpu_power: Optional[float],
+    gpu_power: Optional[float],
+    direct_system_power: Optional[float],
+) -> Optional[float]:
+    if direct_system_power is not None:
+        return round(float(direct_system_power), 1)
+    if cpu_power is None and gpu_power is None:
+        return None
+    return round(_SYSTEM_BASE_POWER_WATTS + float(cpu_power or 0.0) + float(gpu_power or 0.0), 1)
 
 
 def _extract_gpu_stats() -> Dict[str, float]:
@@ -74,6 +89,10 @@ class MacOSTelemetryProvider(TelemetryProvider):
             self._smc = AppleSMC()
         except RuntimeError:
             self._smc = None
+        try:
+            self._intel_power_gadget = IntelPowerGadget()
+        except RuntimeError:
+            self._intel_power_gadget = None
 
         self._last_net_sample = self._net_sample()
         self._last_disk_sample = self._disk_sample()
@@ -157,7 +176,11 @@ class MacOSTelemetryProvider(TelemetryProvider):
         snapshot.disk_activity_percent = self._disk_activity_percent()
         snapshot.net_up_bps = net_up_bps
         snapshot.net_down_bps = net_down_bps
-        snapshot.system_power_estimated = None
+        snapshot.system_power_estimated = _estimate_system_power(
+            snapshot.cpu_power,
+            snapshot.gpu_power,
+            self._intel_power_gadget.platform_power() if self._intel_power_gadget else None,
+        )
         snapshot.source_ok = any(
             value is not None
             for value in (

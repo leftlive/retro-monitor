@@ -2,7 +2,6 @@ package provider
 
 import (
 	"os"
-	"runtime"
 	"strings"
 	"time"
 
@@ -22,6 +21,8 @@ type MacOSProvider struct {
 	lastDiskAt    time.Time
 	netPrimed     bool
 	diskPrimed    bool
+	smc           *appleSMC
+	intelPower    *intelPowerGadget
 }
 
 func NewMacOSProvider() *MacOSProvider {
@@ -32,6 +33,13 @@ func NewMacOSProvider() *MacOSProvider {
 
 	p := &MacOSProvider{
 		hostname: hostname,
+	}
+
+	if smc, err := newAppleSMC(); err == nil {
+		p.smc = smc
+	}
+	if gadget, err := newIntelPowerGadget(); err == nil {
+		p.intelPower = gadget
 	}
 
 	if counters, err := net.IOCounters(false); err == nil && len(counters) > 0 {
@@ -49,9 +57,54 @@ func NewMacOSProvider() *MacOSProvider {
 	return p
 }
 
+func (p *MacOSProvider) Close() error {
+	if p == nil {
+		return nil
+	}
+	if p.smc != nil {
+		p.smc.Close()
+		p.smc = nil
+	}
+	if p.intelPower != nil {
+		p.intelPower.Close()
+		p.intelPower = nil
+	}
+	return nil
+}
+
 func (p *MacOSProvider) Sample() (schema.Snapshot, error) {
-	out := schema.Empty(p.hostname, p.hostname, "macos_"+runtime.GOARCH)
+	out := schema.Empty(p.hostname, p.hostname, "macos_hackintosh")
 	out.Timestamp = time.Now().UTC().Format(time.RFC3339)
+
+	if p.smc != nil {
+		out.CPUTemp = p.smc.cpuTemperature()
+		out.CPUPower = p.smc.cpuPower()
+
+		fanCount := p.smc.fanCount()
+		var fanValues []float64
+		for i := 0; i < fanCount; i++ {
+			if speed := p.smc.fanSpeed(i); speed != nil {
+				fanValues = append(fanValues, *speed)
+			}
+		}
+		if len(fanValues) > 0 {
+			maxFan := fanValues[0]
+			total := 0.0
+			for _, speed := range fanValues {
+				total += speed
+				if speed > maxFan {
+					maxFan = speed
+				}
+			}
+			out.FanRPMMax = f64(round1(maxFan))
+			out.FanRPMAvg = f64(round1(total / float64(len(fanValues))))
+		}
+	}
+
+	out.GPUTemp = readGPUStat("Temperature(C)")
+	out.GPULoad = readGPUStat("GPU Activity(%)")
+	out.GPUClock = readGPUStat("Core Clock(MHz)")
+	out.GPUPower = readGPUStat("Total Power(W)")
 
 	if percents, err := cpu.Percent(0, false); err == nil && len(percents) > 0 {
 		out.CPULoad = f64(round1(percents[0]))
@@ -105,15 +158,58 @@ func (p *MacOSProvider) Sample() (schema.Snapshot, error) {
 		p.diskPrimed = true
 	}
 
+	if partitions, err := disk.Partitions(false); err == nil {
+		out.DiskTempMax = readNVMeTemperatureMax(mountedBSDNames(partitions))
+	}
+
+	if direct := func() *float64 {
+		if p.intelPower == nil {
+			return nil
+		}
+		return p.intelPower.platformPower()
+	}(); direct != nil {
+		out.SystemPowerEstimated = direct
+	} else if out.CPUPower != nil || out.GPUPower != nil {
+		estimate := 20.0
+		if out.CPUPower != nil {
+			estimate += *out.CPUPower
+		}
+		if out.GPUPower != nil {
+			estimate += *out.GPUPower
+		}
+		out.SystemPowerEstimated = f64(round1(estimate))
+	}
+
 	out.SourceOK = hasAny(
+		out.CPUTemp,
 		out.CPULoad,
+		out.CPUPower,
 		out.CPUClock,
+		out.GPUTemp,
+		out.GPULoad,
 		out.MemoryPercent,
 		out.NetUpBPS,
 		out.NetDownBPS,
 	)
 
 	return out, nil
+}
+
+func mountedBSDNames(partitions []disk.PartitionStat) []string {
+	seen := map[string]struct{}{}
+	var out []string
+	for _, partition := range partitions {
+		if !strings.HasPrefix(partition.Device, "/dev/") {
+			continue
+		}
+		name := strings.TrimPrefix(partition.Device, "/dev/")
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		out = append(out, name)
+	}
+	return out
 }
 
 func sumDiskCounters(counters map[string]disk.IOCountersStat) disk.IOCountersStat {
@@ -127,10 +223,6 @@ func sumDiskCounters(counters map[string]disk.IOCountersStat) disk.IOCountersSta
 	return total
 }
 
-func round1(v float64) float64 {
-	return float64(int(v*10+0.5)) / 10
-}
-
 func hasAny(values ...*float64) bool {
 	for _, v := range values {
 		if v != nil {
@@ -139,4 +231,3 @@ func hasAny(values ...*float64) bool {
 	}
 	return false
 }
-
