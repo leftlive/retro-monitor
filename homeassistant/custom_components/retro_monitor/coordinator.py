@@ -13,8 +13,16 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import CONF_HOST, CONF_PORT, CONF_SCAN_INTERVAL, DOMAIN
-from .validator import PayloadValidationError, validate_payload
+from .const import (
+    CONF_HOST,
+    CONF_PATH,
+    CONF_PORT,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_PATH,
+    DOMAIN,
+    PROFILE_DESKTOP,
+)
+from .validator import PayloadValidationError, detect_payload_profile, validate_payload
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,7 +49,8 @@ class RetroMonitorCoordinator(DataUpdateCoordinator[dict]):
         self.entry = entry
         self.host: str = entry.data[CONF_HOST]
         self.port: int = entry.data[CONF_PORT]
-        self.url: str = f"http://{self.host}:{self.port}/telemetry"
+        self.path: str = entry.data.get(CONF_PATH, DEFAULT_PATH)
+        self.url: str = f"http://{self.host}:{self.port}{self.path}"
         self.session = async_get_clientsession(hass)
 
         # Cached device identity —— survives transient failures so that
@@ -50,6 +59,7 @@ class RetroMonitorCoordinator(DataUpdateCoordinator[dict]):
 
         # True when the most recent successful payload had source_ok=false.
         self.payload_degraded: bool = False
+        self.profile: str = PROFILE_DESKTOP
 
         super().__init__(
             hass,
@@ -95,6 +105,7 @@ class RetroMonitorCoordinator(DataUpdateCoordinator[dict]):
         # Layer 3: Degraded payload (source_ok=false)
         # ------------------------------------------------------------------
         self.payload_degraded = not payload["source_ok"]
+        self.profile = detect_payload_profile(payload)
         if self.payload_degraded:
             _LOGGER.debug(
                 "Telemetry from %s is degraded (source_ok=false)", self.url
@@ -105,6 +116,7 @@ class RetroMonitorCoordinator(DataUpdateCoordinator[dict]):
             "device_id": payload.get("device_id", ""),
             "hostname": payload.get("hostname", ""),
             "platform": payload.get("platform", ""),
+            "model": payload.get("model", ""),
         }
 
         return payload

@@ -2,6 +2,7 @@
 __pycache__/
 *.egg-info/
 go-agent/bin/
+go-agent/retro-monitor-agent
 *.pyc
 *.pyo
 .DS_Store
@@ -9,3 +10,5 @@ go-agent/bin/
 dist/
 build/
 references/
+windows-agent/**/bin/
+windows-agent/**/obj/

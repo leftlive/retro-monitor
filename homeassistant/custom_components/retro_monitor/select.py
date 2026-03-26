@@ -13,7 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import DISPLAY_MODE_OPTIONS, DOMAIN
+from .const import DISPLAY_MODE_OPTIONS, DOMAIN, PROFILE_DESKTOP
 from .coordinator import RetroMonitorCoordinator
 from .entity import RetroMonitorCoordinatorEntity
 
@@ -25,6 +25,8 @@ async def async_setup_entry(
 ) -> None:
     """Set up the OLED display mode selector."""
     coordinator: RetroMonitorCoordinator = hass.data[DOMAIN][entry.entry_id]
+    if coordinator.profile != PROFILE_DESKTOP:
+        return
     async_add_entities([RetroMonitorDisplayModeSelect(coordinator, entry)])
 
 

@@ -28,15 +28,18 @@ class RetroMonitorCoordinatorEntity(CoordinatorEntity[RetroMonitorCoordinator], 
             device_id = cached.get("device_id") or self._entry.entry_id
             hostname = cached.get("hostname") or "Retro Monitor Host"
             platform = cached.get("platform") or "telemetry-agent"
+            model_name = cached.get("model") or platform
         else:
             device_id = self._entry.entry_id
             hostname = "Retro Monitor Host"
             platform = "telemetry-agent"
+            model_name = platform
 
         return DeviceInfo(
             identifiers={(DOMAIN, device_id)},
             name=hostname,
             manufacturer="Retro Monitor",
-            model=platform,
+            model=model_name,
+            sw_version=platform,
             configuration_url=self.coordinator.url,
         )

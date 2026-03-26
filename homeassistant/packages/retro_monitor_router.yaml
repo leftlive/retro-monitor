@@ -1,0 +1,114 @@
+rest:
+  - resource: http://127.0.0.1/cgi-bin/retro-monitor-router
+    scan_interval: 1
+    timeout: 5
+    sensor:
+      - name: Router Telemetry Raw
+        unique_id: retro_monitor_router_telemetry_raw
+        value_template: "{{ value_json.timestamp }}"
+        json_attributes:
+          - device_id
+          - hostname
+          - platform
+          - model
+          - source_ok
+          - wan_up
+          - wan_uptime_s
+          - wan_ip
+          - net_down_bps
+          - net_up_bps
+          - net_link_mbps
+          - net_util_percent
+          - cpu_temp
+          - cpu_load_percent
+          - memory_used_mb
+          - memory_total_mb
+          - memory_percent
+
+template:
+  - binary_sensor:
+      - name: Router WAN Up
+        unique_id: retro_monitor_router_wan_up
+        state: "{{ state_attr('sensor.router_telemetry_raw', 'wan_up') | bool(false) }}"
+        icon: >-
+          {% if this.state == 'on' %}
+            mdi:wan
+          {% else %}
+            mdi:wan-off
+          {% endif %}
+
+  - sensor:
+      - name: Router WAN Download
+        unique_id: retro_monitor_router_net_down_bps
+        unit_of_measurement: bit/s
+        state_class: measurement
+        icon: mdi:download-network-outline
+        state: "{{ state_attr('sensor.router_telemetry_raw', 'net_down_bps') | float(0) }}"
+
+      - name: Router WAN Upload
+        unique_id: retro_monitor_router_net_up_bps
+        unit_of_measurement: bit/s
+        state_class: measurement
+        icon: mdi:upload-network-outline
+        state: "{{ state_attr('sensor.router_telemetry_raw', 'net_up_bps') | float(0) }}"
+
+      - name: Router WAN Utilization
+        unique_id: retro_monitor_router_net_util_percent
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:wan
+        state: "{{ state_attr('sensor.router_telemetry_raw', 'net_util_percent') | float(0) }}"
+
+      - name: Router WAN Link Speed
+        unique_id: retro_monitor_router_net_link_mbps
+        unit_of_measurement: Mbps
+        state_class: measurement
+        icon: mdi:speedometer
+        state: "{{ state_attr('sensor.router_telemetry_raw', 'net_link_mbps') | float(0) }}"
+
+      - name: Router CPU Temperature
+        unique_id: retro_monitor_router_cpu_temp
+        unit_of_measurement: "°C"
+        state_class: measurement
+        icon: mdi:cpu-64-bit
+        state: "{{ state_attr('sensor.router_telemetry_raw', 'cpu_temp') | float(0) }}"
+
+      - name: Router CPU Load
+        unique_id: retro_monitor_router_cpu_load_percent
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:gauge
+        state: "{{ state_attr('sensor.router_telemetry_raw', 'cpu_load_percent') | float(0) }}"
+
+      - name: Router Memory Used
+        unique_id: retro_monitor_router_memory_used_mb
+        unit_of_measurement: MiB
+        state_class: measurement
+        icon: mdi:memory
+        state: "{{ state_attr('sensor.router_telemetry_raw', 'memory_used_mb') | float(0) }}"
+
+      - name: Router Memory Total
+        unique_id: retro_monitor_router_memory_total_mb
+        unit_of_measurement: MiB
+        state_class: measurement
+        icon: mdi:memory
+        state: "{{ state_attr('sensor.router_telemetry_raw', 'memory_total_mb') | float(0) }}"
+
+      - name: Router Memory Usage
+        unique_id: retro_monitor_router_memory_percent
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:memory
+        state: "{{ state_attr('sensor.router_telemetry_raw', 'memory_percent') | float(0) }}"
+
+      - name: Router WAN Uptime
+        unique_id: retro_monitor_router_wan_uptime_s
+        unit_of_measurement: s
+        state_class: measurement
+        icon: mdi:timer-outline
+        state: "{{ state_attr('sensor.router_telemetry_raw', 'wan_uptime_s') | int(0) }}"
+
+      - name: Router WAN IP
+        unique_id: retro_monitor_router_wan_ip
+        icon: mdi:ip-network-outline
+        state: "{{ state_attr('sensor.router_telemetry_raw', 'wan_ip') or 'unknown' }}"

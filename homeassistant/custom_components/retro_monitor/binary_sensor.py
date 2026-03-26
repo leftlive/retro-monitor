@@ -13,13 +13,19 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .const import DOMAIN, PROFILE_ROUTER
 from .coordinator import RetroMonitorCoordinator
 from .entity import RetroMonitorCoordinatorEntity
 
 SOURCE_OK_DESCRIPTION = BinarySensorEntityDescription(
     key="source_ok",
     name="Data Source OK",
+    entity_category=EntityCategory.DIAGNOSTIC,
+)
+
+WAN_UP_DESCRIPTION = BinarySensorEntityDescription(
+    key="wan_up",
+    name="WAN Up",
     entity_category=EntityCategory.DIAGNOSTIC,
 )
 
@@ -31,7 +37,12 @@ async def async_setup_entry(
 ) -> None:
     """Set up the source_ok binary sensor."""
     coordinator: RetroMonitorCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([RetroMonitorSourceOkEntity(coordinator, entry)])
+    entities: list[BinarySensorEntity] = [
+        RetroMonitorSourceOkEntity(coordinator, entry)
+    ]
+    if coordinator.profile == PROFILE_ROUTER:
+        entities.append(RetroMonitorRouterWanUpEntity(coordinator, entry))
+    async_add_entities(entities)
 
 
 class RetroMonitorSourceOkEntity(RetroMonitorCoordinatorEntity, BinarySensorEntity):
@@ -67,3 +78,24 @@ class RetroMonitorSourceOkEntity(RetroMonitorCoordinatorEntity, BinarySensorEnti
         if platform := data.get("platform"):
             attrs["agent_platform"] = platform
         return attrs
+
+
+class RetroMonitorRouterWanUpEntity(RetroMonitorCoordinatorEntity, BinarySensorEntity):
+    """Router WAN carrier/status binary sensor."""
+
+    entity_description = WAN_UP_DESCRIPTION
+
+    def __init__(
+        self,
+        coordinator: RetroMonitorCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_wan_up"
+
+    @property
+    def is_on(self) -> Optional[bool]:
+        data = self.coordinator.data
+        if data is None:
+            return None
+        return data.get("wan_up")

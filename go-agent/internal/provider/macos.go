@@ -23,6 +23,29 @@ type MacOSProvider struct {
 	diskPrimed    bool
 	smc           *appleSMC
 	intelPower    *intelPowerGadget
+	partitions    []disk.PartitionStat
+	staticOnce    bool
+	staticCPUClock *float64
+	staticMemTotal *float64
+	slowSnapshot  slowMetrics
+	slowAt        time.Time
+	slowInterval  time.Duration
+}
+
+type slowMetrics struct {
+	cpuTemp      *float64
+	cpuPower     *float64
+	fanRPMMax    *float64
+	fanRPMAvg    *float64
+	gpuTemp      *float64
+	gpuLoad      *float64
+	gpuClock     *float64
+	gpuPower     *float64
+	memoryUsedMB *float64
+	memoryTotalMB *float64
+	memoryPercent *float64
+	diskTempMax  *float64
+	systemPower  *float64
 }
 
 func NewMacOSProvider() *MacOSProvider {
@@ -33,6 +56,7 @@ func NewMacOSProvider() *MacOSProvider {
 
 	p := &MacOSProvider{
 		hostname: hostname,
+		slowInterval: 2 * time.Second,
 	}
 
 	if smc, err := newAppleSMC(); err == nil {
@@ -76,48 +100,11 @@ func (p *MacOSProvider) Sample() (schema.Snapshot, error) {
 	out := schema.Empty(p.hostname, p.hostname, "macos_hackintosh")
 	out.Timestamp = time.Now().UTC().Format(time.RFC3339)
 
-	if p.smc != nil {
-		out.CPUTemp = p.smc.cpuTemperature()
-		out.CPUPower = p.smc.cpuPower()
-
-		fanCount := p.smc.fanCount()
-		var fanValues []float64
-		for i := 0; i < fanCount; i++ {
-			if speed := p.smc.fanSpeed(i); speed != nil {
-				fanValues = append(fanValues, *speed)
-			}
-		}
-		if len(fanValues) > 0 {
-			maxFan := fanValues[0]
-			total := 0.0
-			for _, speed := range fanValues {
-				total += speed
-				if speed > maxFan {
-					maxFan = speed
-				}
-			}
-			out.FanRPMMax = f64(round1(maxFan))
-			out.FanRPMAvg = f64(round1(total / float64(len(fanValues))))
-		}
-	}
-
-	out.GPUTemp = readGPUStat("Temperature(C)")
-	out.GPULoad = readGPUStat("GPU Activity(%)")
-	out.GPUClock = readGPUStat("Core Clock(MHz)")
-	out.GPUPower = readGPUStat("Total Power(W)")
+	p.populateStatic(&out)
+	p.populateSlow(&out)
 
 	if percents, err := cpu.Percent(0, false); err == nil && len(percents) > 0 {
 		out.CPULoad = f64(round1(percents[0]))
-	}
-
-	if freqs, err := cpu.Info(); err == nil && len(freqs) > 0 {
-		out.CPUClock = f64(round1(freqs[0].Mhz))
-	}
-
-	if vm, err := mem.VirtualMemory(); err == nil {
-		out.MemoryUsedMB = f64(round1(float64(vm.Used) / 1024.0 / 1024.0))
-		out.MemoryTotalMB = f64(round1(float64(vm.Total) / 1024.0 / 1024.0))
-		out.MemoryPercent = f64(round1(vm.UsedPercent))
 	}
 
 	if counters, err := net.IOCounters(false); err == nil && len(counters) > 0 {
@@ -158,28 +145,6 @@ func (p *MacOSProvider) Sample() (schema.Snapshot, error) {
 		p.diskPrimed = true
 	}
 
-	if partitions, err := disk.Partitions(false); err == nil {
-		out.DiskTempMax = readNVMeTemperatureMax(mountedBSDNames(partitions))
-	}
-
-	if direct := func() *float64 {
-		if p.intelPower == nil {
-			return nil
-		}
-		return p.intelPower.platformPower()
-	}(); direct != nil {
-		out.SystemPowerEstimated = direct
-	} else if out.CPUPower != nil || out.GPUPower != nil {
-		estimate := 20.0
-		if out.CPUPower != nil {
-			estimate += *out.CPUPower
-		}
-		if out.GPUPower != nil {
-			estimate += *out.GPUPower
-		}
-		out.SystemPowerEstimated = f64(round1(estimate))
-	}
-
 	out.SourceOK = hasAny(
 		out.CPUTemp,
 		out.CPULoad,
@@ -193,6 +158,112 @@ func (p *MacOSProvider) Sample() (schema.Snapshot, error) {
 	)
 
 	return out, nil
+}
+
+func (p *MacOSProvider) populateStatic(out *schema.Snapshot) {
+	if !p.staticOnce {
+		if freqs, err := cpu.Info(); err == nil && len(freqs) > 0 {
+			p.staticCPUClock = f64(round1(freqs[0].Mhz))
+		}
+		if vm, err := mem.VirtualMemory(); err == nil {
+			p.staticMemTotal = f64(round1(float64(vm.Total) / 1024.0 / 1024.0))
+		}
+		if partitions, err := disk.Partitions(false); err == nil {
+			p.partitions = partitions
+		}
+		p.staticOnce = true
+	}
+	out.CPUClock = p.staticCPUClock
+	out.MemoryTotalMB = p.staticMemTotal
+}
+
+func (p *MacOSProvider) populateSlow(out *schema.Snapshot) {
+	now := time.Now()
+	if p.slowAt.IsZero() || now.Sub(p.slowAt) >= p.slowInterval {
+		p.slowSnapshot = p.collectSlowMetrics()
+		p.slowAt = now
+	}
+
+	out.CPUTemp = p.slowSnapshot.cpuTemp
+	out.CPUPower = p.slowSnapshot.cpuPower
+	out.FanRPMMax = p.slowSnapshot.fanRPMMax
+	out.FanRPMAvg = p.slowSnapshot.fanRPMAvg
+	out.GPUTemp = p.slowSnapshot.gpuTemp
+	out.GPULoad = p.slowSnapshot.gpuLoad
+	out.GPUClock = p.slowSnapshot.gpuClock
+	out.GPUPower = p.slowSnapshot.gpuPower
+	out.MemoryUsedMB = p.slowSnapshot.memoryUsedMB
+	if out.MemoryTotalMB == nil {
+		out.MemoryTotalMB = p.slowSnapshot.memoryTotalMB
+	}
+	out.MemoryPercent = p.slowSnapshot.memoryPercent
+	out.DiskTempMax = p.slowSnapshot.diskTempMax
+	out.SystemPowerEstimated = p.slowSnapshot.systemPower
+}
+
+func (p *MacOSProvider) collectSlowMetrics() slowMetrics {
+	var m slowMetrics
+
+	if p.smc != nil {
+		m.cpuTemp = p.smc.cpuTemperature()
+		m.cpuPower = p.smc.cpuPower()
+
+		fanCount := p.smc.fanCount()
+		var fanValues []float64
+		for i := 0; i < fanCount; i++ {
+			if speed := p.smc.fanSpeed(i); speed != nil {
+				fanValues = append(fanValues, *speed)
+			}
+		}
+		if len(fanValues) > 0 {
+			maxFan := fanValues[0]
+			total := 0.0
+			for _, speed := range fanValues {
+				total += speed
+				if speed > maxFan {
+					maxFan = speed
+				}
+			}
+			m.fanRPMMax = f64(round1(maxFan))
+			m.fanRPMAvg = f64(round1(total / float64(len(fanValues))))
+		}
+	}
+
+	m.gpuTemp = readGPUStat("Temperature(C)")
+	m.gpuLoad = readGPUStat("GPU Activity(%)")
+	m.gpuClock = readGPUStat("Core Clock(MHz)")
+	m.gpuPower = readGPUStat("Total Power(W)")
+
+	if vm, err := mem.VirtualMemory(); err == nil {
+		m.memoryUsedMB = f64(round1(float64(vm.Used) / 1024.0 / 1024.0))
+		m.memoryTotalMB = f64(round1(float64(vm.Total) / 1024.0 / 1024.0))
+		m.memoryPercent = f64(round1(vm.UsedPercent))
+	}
+
+	if len(p.partitions) > 0 {
+		m.diskTempMax = readNVMeTemperatureMax(mountedBSDNames(p.partitions))
+	} else if partitions, err := disk.Partitions(false); err == nil {
+		p.partitions = partitions
+		m.diskTempMax = readNVMeTemperatureMax(mountedBSDNames(partitions))
+	}
+
+	if p.intelPower != nil {
+		if direct := p.intelPower.platformPower(); direct != nil {
+			m.systemPower = direct
+		}
+	}
+	if m.systemPower == nil && (m.cpuPower != nil || m.gpuPower != nil) {
+		estimate := 20.0
+		if m.cpuPower != nil {
+			estimate += *m.cpuPower
+		}
+		if m.gpuPower != nil {
+			estimate += *m.gpuPower
+		}
+		m.systemPower = f64(round1(estimate))
+	}
+
+	return m
 }
 
 func mountedBSDNames(partitions []disk.PartitionStat) []string {

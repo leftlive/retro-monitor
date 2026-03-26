@@ -17,12 +17,15 @@ The repository currently includes:
 - `docs/reference-projects.md`: reference mapping for `Stats`, `SMCKit`, and `HWMonitorSMC2`
 - `docs/ssd1322-16pin-4spi-wiring.md`: wiring contract for the current 16-pin SSD1322 module
 - `docs/oled-preview.md`: local browser preview workflow for SSD1322 layout tuning
+- `docs/oled-control-requirements.md`: deferred v2 control model for Home Assistant -> OLED write-back
+- `docs/openwrt-router-integration.md`: low-cost router integration path for an OpenWrt/iStoreOS device
 - `docs/macos-agent-service.md`: LaunchAgent setup for a persistent macOS telemetry service
 - `src/retro_monitor_agent/`: Python agent package
 - `go-agent/`: future Go agent
 - `homeassistant/custom_components/retro_monitor/`: HA integration scaffold
 - `esphome/oled_display.example.yaml`: display-side template
 - `tools/oled-preview/index.html`: zero-dependency local OLED preview
+- `openwrt/router_telemetry.sh`: minimal OpenWrt-side telemetry snapshot script
 - `tests/`: unit tests for the agent and schema
 
 ## Quick Start

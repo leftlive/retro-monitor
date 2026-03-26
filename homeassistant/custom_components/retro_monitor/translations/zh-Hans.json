@@ -7,6 +7,7 @@
         "data": {
           "host": "主机地址",
           "port": "端口",
+          "path": "路径",
           "scan_interval": "扫描间隔 (秒)"
         }
       }

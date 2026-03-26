@@ -13,7 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, PROFILE_DESKTOP
 from .coordinator import RetroMonitorCoordinator
 from .entity import RetroMonitorCoordinatorEntity
 
@@ -25,6 +25,8 @@ async def async_setup_entry(
 ) -> None:
     """Set up OLED brightness and page interval controls."""
     coordinator: RetroMonitorCoordinator = hass.data[DOMAIN][entry.entry_id]
+    if coordinator.profile != PROFILE_DESKTOP:
+        return
     async_add_entities(
         [
             RetroMonitorNumberEntity(

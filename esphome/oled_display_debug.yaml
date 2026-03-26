@@ -3,16 +3,43 @@ substitutions:
   friendly_name: Retro Monitor Display
   host_label: NOX V1.09
   page_rotate_s: "10"
-  ha_mac_payload: sensor.iandeimac_lan_display_payload
-  ha_router_payload: sensor.istoreos_display_payload
+  ha_cpu_temp: sensor.iandeimac_local_cpu_temperature
+  ha_cpu_load: sensor.iandeimac_local_cpu_load
+  ha_cpu_clock: sensor.iandeimac_local_cpu_clock
+  ha_cpu_power: sensor.iandeimac_local_cpu_power
+  ha_gpu_temp: sensor.iandeimac_local_gpu_temperature
+  ha_gpu_load: sensor.iandeimac_local_gpu_load
+  ha_gpu_clock: sensor.iandeimac_local_gpu_clock
+  ha_gpu_power: sensor.iandeimac_local_gpu_power
+  ha_memory_used: sensor.iandeimac_local_memory_used
+  ha_memory_total: sensor.iandeimac_local_memory_total
+  ha_memory_percent: sensor.iandeimac_local_memory_usage
+  ha_fan_rpm_max: sensor.iandeimac_local_fan_speed_max
+  ha_disk_temp_max: sensor.iandeimac_local_disk_temperature_max
+  ha_system_power: sensor.iandeimac_local_system_power_estimated
+  ha_source_ok: binary_sensor.iandeimac_local_data_source_ok
+  ha_router_net_down: sensor.istoreos_wan_download
+  ha_router_net_up: sensor.istoreos_wan_upload
+  ha_router_net_util: sensor.istoreos_wan_utilization
+  ha_router_net_link: sensor.istoreos_wan_link_speed
+  ha_router_cpu_temp: sensor.istoreos_cpu_temperature
+  ha_router_cpu_load: sensor.istoreos_cpu_load
+  ha_router_memory_used: sensor.istoreos_memory_used
+  ha_router_memory_total: sensor.istoreos_memory_total
+  ha_router_memory_percent: sensor.istoreos_memory_usage
+  ha_router_wan_uptime: sensor.istoreos_wan_uptime
+  ha_router_source_ok: binary_sensor.istoreos_data_source_ok
+  ha_router_wan_up: binary_sensor.istoreos_wan_up
+
+# ===========================================================================
+# DIAGNOSTIC BUILD — not for long-term production use.
+# Contains extra logging, heap monitoring, WiFi RSSI, and render timing
+# to help pinpoint display freeze root cause.
+# ===========================================================================
 
 esphome:
   name: ${devicename}
   friendly_name: ${friendly_name}
-  includes:
-    - my_includes.h
-  libraries:
-    - ArduinoJson@6.21.3
 
 esp32:
   board: esp32dev
@@ -20,8 +47,8 @@ esp32:
     type: arduino
 
 logger:
-  level: WARN
-  baud_rate: 0
+  level: DEBUG
+  baud_rate: 115200
 
 api:
   homeassistant_states: true
@@ -35,16 +62,13 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   power_save_mode: none
-  fast_connect: true
-  reboot_timeout: 5min
+  reboot_timeout: 2min
 
-# Current module wiring contract: SSD1322 16-pin board in 4SPI mode.
 spi:
   clk_pin: GPIO18
   mosi_pin: GPIO23
 
 globals:
-  # Timestamps
   - id: last_ha_state_ms
     type: uint32_t
     restore_value: no
@@ -53,129 +77,151 @@ globals:
     type: uint32_t
     restore_value: no
     initial_value: "0"
-    
-  # MAC Globals
-  - id: mac_cpu_temp
-    type: float
-    initial_value: "0.0"
-  - id: mac_cpu_load
-    type: float
-    initial_value: "0.0"
-  - id: mac_cpu_power
-    type: float
-    initial_value: "0.0"
-  - id: mac_gpu_temp
-    type: float
-    initial_value: "0.0"
-  - id: mac_gpu_load
-    type: float
-    initial_value: "0.0"
-  - id: mac_sys_power
-    type: float
-    initial_value: "0.0"
-  - id: mac_mem_used
-    type: float
-    initial_value: "0.0"
-  - id: mac_mem_pct
-    type: float
-    initial_value: "0.0"
-  - id: mac_disk_temp
-    type: float
-    initial_value: "0.0"
-  - id: mac_source_ok
-    type: bool
-    initial_value: "false"
+  - id: render_start_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: "0"
 
-  # ROUTER Globals
-  - id: rtr_net_down
-    type: float
-    initial_value: "0.0"
-  - id: rtr_net_up
-    type: float
-    initial_value: "0.0"
-  - id: rtr_cpu_temp
-    type: float
-    initial_value: "0.0"
-  - id: rtr_cpu_load
-    type: float
-    initial_value: "0.0"
-  - id: rtr_wan_upt
-    type: float
-    initial_value: "0.0"
-  - id: rtr_mem_used
-    type: float
-    initial_value: "0.0"
-  - id: rtr_mem_tot
-    type: float
-    initial_value: "0.0"
-  - id: rtr_mem_pct
-    type: float
-    initial_value: "0.0"
-  - id: rtr_source_ok
-    type: bool
-    initial_value: "false"
+# --- Diagnostic sensors ---
+sensor:
+  # ESP32 internal diagnostics
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    id: wifi_rssi
+    update_interval: 10s
+  - platform: uptime
+    name: "Uptime"
+    id: uptime_sensor
+    update_interval: 60s
 
-# ---------------------------------------------------------------------------
-# Sensors
-# ---------------------------------------------------------------------------
-text_sensor:
+  # --- HA sensors (same as stable version) ---
   - platform: homeassistant
-    id: mac_payload
-    entity_id: ${ha_mac_payload}
+    id: cpu_temp
+    entity_id: ${ha_cpu_temp}
+    filters:
+      - throttle: 1s
     on_value:
       then:
         - lambda: |-
-            DynamicJsonDocument doc(512);
-            DeserializationError err = deserializeJson(doc, x.c_str());
-            if (!err) {
-              id(mac_cpu_temp) = doc["ct"] | 0.0f;
-              id(mac_cpu_load) = doc["cl"] | 0.0f;
-              id(mac_cpu_power) = doc["cp"] | 0.0f;
-              id(mac_gpu_temp) = doc["gt"] | 0.0f;
-              id(mac_gpu_load) = doc["gl"] | 0.0f;
-              id(mac_sys_power) = doc["sp"] | 0.0f;
-              id(mac_mem_used) = doc["mu"] | 0.0f;
-              id(mac_mem_pct) = doc["mp"] | 0.0f;
-              id(mac_disk_temp) = doc["dt"] | 0.0f;
-              int ok = doc["ok"] | 0;
-              id(mac_source_ok) = (ok == 1);
-              id(last_ha_state_ms) = millis();
-            } else {
-              ESP_LOGW("json", "MAC JSON parse error");
-            }
-
+            id(last_ha_state_ms) = millis();
+            ESP_LOGD("ha_sensor", "cpu_temp = %.1f", x);
   - platform: homeassistant
-    id: router_payload
-    entity_id: ${ha_router_payload}
+    id: cpu_load
+    entity_id: ${ha_cpu_load}
+    filters:
+      - throttle: 1s
+  - platform: homeassistant
+    id: cpu_power
+    entity_id: ${ha_cpu_power}
+    filters:
+      - throttle: 1s
+  - platform: homeassistant
+    id: gpu_temp
+    entity_id: ${ha_gpu_temp}
+    filters:
+      - throttle: 1s
+  - platform: homeassistant
+    id: gpu_load
+    entity_id: ${ha_gpu_load}
+    filters:
+      - throttle: 1s
+  - platform: homeassistant
+    id: memory_used
+    entity_id: ${ha_memory_used}
+    filters:
+      - throttle: 1s
+  - platform: homeassistant
+    id: memory_percent
+    entity_id: ${ha_memory_percent}
+    filters:
+      - throttle: 1s
+  - platform: homeassistant
+    id: disk_temp_max
+    entity_id: ${ha_disk_temp_max}
+  - platform: homeassistant
+    id: system_power
+    entity_id: ${ha_system_power}
+    filters:
+      - throttle: 1s
+  - platform: homeassistant
+    id: router_net_down
+    entity_id: ${ha_router_net_down}
+    filters:
+      - throttle: 1s
+  - platform: homeassistant
+    id: router_net_up
+    entity_id: ${ha_router_net_up}
+    filters:
+      - throttle: 1s
+  - platform: homeassistant
+    id: router_cpu_temp
+    entity_id: ${ha_router_cpu_temp}
+    filters:
+      - throttle: 1s
     on_value:
       then:
         - lambda: |-
-            DynamicJsonDocument doc(512);
-            DeserializationError err = deserializeJson(doc, x.c_str());
-            if (!err) {
-              id(rtr_net_down) = doc["nd"] | 0.0f;
-              id(rtr_net_up) = doc["nu"] | 0.0f;
-              id(rtr_cpu_temp) = doc["ct"] | 0.0f;
-              id(rtr_cpu_load) = doc["cl"] | 0.0f;
-              id(rtr_wan_upt) = doc["wu"] | 0.0f;
-              id(rtr_mem_used) = doc["mu"] | 0.0f;
-              id(rtr_mem_tot) = doc["mt"] | 0.0f;
-              id(rtr_mem_pct) = doc["mp"] | 0.0f;
-              int ok = doc["ok"] | 0;
-              id(rtr_source_ok) = (ok == 1);
-              id(last_ha_state_ms) = millis();
-            } else {
-              ESP_LOGW("json", "Router JSON parse error");
-            }
+            id(last_ha_state_ms) = millis();
+            ESP_LOGD("ha_sensor", "router_cpu_temp = %.1f", x);
+  - platform: homeassistant
+    id: router_cpu_load
+    entity_id: ${ha_router_cpu_load}
+    filters:
+      - throttle: 1s
+  - platform: homeassistant
+    id: router_memory_used
+    entity_id: ${ha_router_memory_used}
+    filters:
+      - throttle: 1s
+  - platform: homeassistant
+    id: router_memory_total
+    entity_id: ${ha_router_memory_total}
+  - platform: homeassistant
+    id: router_memory_percent
+    entity_id: ${ha_router_memory_percent}
+    filters:
+      - throttle: 1s
+  - platform: homeassistant
+    id: router_wan_uptime
+    entity_id: ${ha_router_wan_uptime}
+    filters:
+      - throttle: 1s
 
-# ---------------------------------------------------------------------------
-# Intervals
-# ---------------------------------------------------------------------------
+binary_sensor:
+  - platform: homeassistant
+    id: source_ok
+    entity_id: ${ha_source_ok}
+    on_state:
+      then:
+        - lambda: 'id(last_ha_state_ms) = millis();'
+  - platform: homeassistant
+    id: router_source_ok
+    entity_id: ${ha_router_source_ok}
+    on_state:
+      then:
+        - lambda: 'id(last_ha_state_ms) = millis();'
+
 interval:
+  # Page rotation
   - interval: ${page_rotate_s}s
     then:
       - display.page.show_next: oled
+      - logger.log:
+          level: WARN
+          format: "Page rotated, frame=%u"
+          args: ['id(display_frame_count)']
 
+  # Periodic diagnostics dump (every 30s)
+  - interval: 30s
+    then:
+      - lambda: |-
+          uint32_t heap = esp_get_free_heap_size();
+          uint32_t stale = id(last_ha_state_ms) == 0 ? 0 : (millis() - id(last_ha_state_ms));
+          ESP_LOGW("diag", "heap=%u  frames=%u  ha_stale_ms=%u  rssi=%.0f",
+                   heap, id(display_frame_count), stale,
+                   id(wifi_rssi).state);
+
+  # Watchdog (same as stable version)
   - interval: 60s
     then:
       - lambda: |-
@@ -194,7 +240,6 @@ button:
   - platform: restart
     id: restart_display
     name: "${friendly_name} Restart"
-
 
 font:
   - file: "fonts/unscii-8.ttf"
@@ -218,9 +263,6 @@ font:
     id: font_micro
     size: 8
 
-# ---------------------------------------------------------------------------
-# Display
-# ---------------------------------------------------------------------------
 display:
   - platform: ssd1322_spi
     id: oled
@@ -233,6 +275,7 @@ display:
       - id: mac_page
         lambda: |-
           id(display_frame_count)++;
+          uint32_t t0 = millis();
 
           auto safe_value = [](float v) -> float {
             return std::isnan(v) ? 0.0f : v;
@@ -243,7 +286,7 @@ display:
           it.fill(COLOR_OFF);
           it.printf(2, 0, id(font_header), COLOR_ON, "%s", "${host_label}");
           it.printf(95, 0, id(font_header), COLOR_ON, "MAC PANEL");
-          it.printf(215, 0, id(font_header), COLOR_ON, id(mac_source_ok) ? "READY" : "ALERT");
+          it.printf(215, 0, id(font_header), COLOR_ON, id(source_ok).state ? "READY" : "ALERT");
           if (blink_on) {
             it.filled_rectangle(250, 1, 4, 4, COLOR_ON);
           } else {
@@ -253,18 +296,15 @@ display:
           it.line(85, 11, 85, 63, COLOR_ON);
           it.line(171, 11, 171, 63, COLOR_ON);
 
-          if (!id(mac_source_ok)) {
+          if (!id(source_ok).state) {
             it.printf(84, 20, id(font_section), COLOR_ON, "SOURCE");
             it.printf(94, 34, id(font_section), COLOR_ON, "OFF");
+            ESP_LOGD("render", "mac_page(offline) %ums", millis() - t0);
             return;
           }
 
-          const int left_x = 0;
-          const int mid_x = 86;
-          const int right_x = 172;
-          const int left_right = 80;
-          const int mid_right = 166;
-          const int right_right = 252;
+          const int left_x = 0, mid_x = 86, right_x = 172;
+          const int left_right = 80, mid_right = 166, right_right = 252;
 
           auto draw_big_number = [&](int x, int y, float value) -> int {
             char buf[8];
@@ -284,22 +324,19 @@ display:
             int filled = static_cast<int>(roundf((cl / 100.0f) * total));
             int tw = total * bw + (total - 1) * gap;
             int x = right_edge - tw;
-            Color bright_color(0, 0, 0, 178);  // 70% brightness
-            Color dim_color(0, 0, 0, 77);      // 30% brightness
             for (int i = 0; i < total; i++) {
               if (i < filled) {
-                it.filled_rectangle(x, y, bw, bh, bright_color);
+                it.filled_rectangle(x, y, bw, bh, COLOR_ON);
               } else {
-                it.filled_rectangle(x, y, bw, bh, dim_color);
+                it.rectangle(x, y, bw, bh, COLOR_ON);
               }
               x += bw + gap;
             }
           };
 
-          const float cpu_temp_v = safe_value(id(mac_cpu_temp));
-          const float cpu_load_v = safe_value(id(mac_cpu_load));
-          const float cpu_power_v = safe_value(id(mac_cpu_power));
-
+          const float cpu_temp_v = safe_value(id(cpu_temp).state);
+          const float cpu_load_v = safe_value(id(cpu_load).state);
+          const float cpu_power_v = safe_value(id(cpu_power).state);
           it.printf(left_x + 4, 16, id(font_section), COLOR_ON, "CPU");
           const int cpu_dw = draw_big_number(left_x + 4, 25, cpu_temp_v);
           it.printf(left_x + 6 + cpu_dw, 24, id(font_stat), COLOR_ON, "C");
@@ -307,10 +344,9 @@ display:
           it.printf(left_right, 40, id(font_stat), COLOR_ON, TextAlign::TOP_RIGHT, "PW %03.0f", cpu_power_v);
           draw_progress_blocks(left_right, 55, cpu_load_v);
 
-          const float mem_pct = safe_value(id(mac_mem_pct));
-          const float mem_used = safe_value(id(mac_mem_used)) / 1024.0f;
-          const float disk_tmp = safe_value(id(mac_disk_temp));
-
+          const float mem_pct = safe_value(id(memory_percent).state);
+          const float mem_used = safe_value(id(memory_used).state) / 1024.0f;
+          const float disk_tmp = safe_value(id(disk_temp_max).state);
           it.printf(mid_x + 4, 16, id(font_section), COLOR_ON, "MEM");
           const int mem_dw = draw_big_number(mid_x + 4, 25, mem_pct);
           it.printf(mid_x + 6 + mem_dw, 24, id(font_stat), COLOR_ON, "%%");
@@ -318,10 +354,9 @@ display:
           it.printf(mid_right, 40, id(font_stat), COLOR_ON, TextAlign::TOP_RIGHT, "DSK %02.0f", disk_tmp);
           draw_progress_blocks(mid_right, 55, mem_pct);
 
-          const float gpu_temp_v = safe_value(id(mac_gpu_temp));
-          const float gpu_load_v = safe_value(id(mac_gpu_load));
-          const float sys_pwr = safe_value(id(mac_sys_power));
-
+          const float gpu_temp_v = safe_value(id(gpu_temp).state);
+          const float gpu_load_v = safe_value(id(gpu_load).state);
+          const float sys_pwr = safe_value(id(system_power).state);
           it.printf(right_x + 4, 16, id(font_section), COLOR_ON, "GPU");
           const int gpu_dw = draw_big_number(right_x + 4, 25, gpu_temp_v);
           it.printf(right_x + 6 + gpu_dw, 24, id(font_stat), COLOR_ON, "C");
@@ -329,9 +364,12 @@ display:
           it.printf(right_right, 40, id(font_stat), COLOR_ON, TextAlign::TOP_RIGHT, "SY %03.0f", sys_pwr);
           draw_progress_blocks(right_right, 55, gpu_load_v);
 
+          ESP_LOGD("render", "mac_page %ums  frame=%u", millis() - t0, id(display_frame_count));
+
       - id: router_page
         lambda: |-
           id(display_frame_count)++;
+          uint32_t t0 = millis();
 
           auto safe_value = [](float v) -> float {
             return std::isnan(v) ? 0.0f : v;
@@ -342,7 +380,7 @@ display:
           it.fill(COLOR_OFF);
           it.printf(2, 0, id(font_header), COLOR_ON, "%s", "${host_label}");
           it.printf(83, 0, id(font_header), COLOR_ON, "ROUTER PANEL");
-          it.printf(215, 0, id(font_header), COLOR_ON, id(rtr_source_ok) ? "READY" : "ALERT");
+          it.printf(215, 0, id(font_header), COLOR_ON, id(router_source_ok).state ? "READY" : "ALERT");
           if (blink_on) {
             it.filled_rectangle(250, 1, 4, 4, COLOR_ON);
           } else {
@@ -352,18 +390,15 @@ display:
           it.line(85, 11, 85, 63, COLOR_ON);
           it.line(171, 11, 171, 63, COLOR_ON);
 
-          if (!id(rtr_source_ok)) {
+          if (!id(router_source_ok).state) {
             it.printf(84, 20, id(font_section), COLOR_ON, "ROUTER");
             it.printf(98, 34, id(font_section), COLOR_ON, "OFF");
+            ESP_LOGD("render", "router_page(offline) %ums", millis() - t0);
             return;
           }
 
-          const int left_x = 0;
-          const int mid_x = 86;
-          const int right_x = 172;
-          const int left_right = 80;
-          const int mid_right = 166;
-          const int right_right = 252;
+          const int left_x = 0, mid_x = 86, right_x = 172;
+          const int left_right = 80, mid_right = 166, right_right = 252;
 
           auto draw_big_number = [&](int x, int y, float value) -> int {
             char buf[8];
@@ -393,13 +428,11 @@ display:
             int filled = static_cast<int>(roundf((cl / 100.0f) * total));
             int tw = total * bw + (total - 1) * gap;
             int x = right_edge - tw;
-            Color bright_color(0, 0, 0, 178);  // 70% brightness
-            Color dim_color(0, 0, 0, 77);      // 30% brightness
             for (int i = 0; i < total; i++) {
               if (i < filled) {
-                it.filled_rectangle(x, y, bw, bh, bright_color);
+                it.filled_rectangle(x, y, bw, bh, COLOR_ON);
               } else {
-                it.filled_rectangle(x, y, bw, bh, dim_color);
+                it.rectangle(x, y, bw, bh, COLOR_ON);
               }
               x += bw + gap;
             }
@@ -417,9 +450,8 @@ display:
             }
           };
 
-          const float net_down = safe_value(id(rtr_net_down));
-          const float net_up = safe_value(id(rtr_net_up));
-
+          const float net_down = safe_value(id(router_net_down).state);
+          const float net_up = safe_value(id(router_net_up).state);
           char dv[8], du[4], uv[8], uu[4];
           format_rate(net_down, dv, sizeof(dv), du, sizeof(du));
           format_rate(net_up, uv, sizeof(uv), uu, sizeof(uu));
@@ -432,10 +464,9 @@ display:
           const int nuw = draw_net_big_text(left_x + 20, 40, uv);
           it.printf(left_x + 22 + nuw, 43, id(font_stat), COLOR_ON, "%s", uu);
 
-          const float rcpu_t = safe_value(id(rtr_cpu_temp));
-          const float rcpu_l = safe_value(id(rtr_cpu_load));
-          const float wan_h = safe_value(id(rtr_wan_upt)) / 3600.0f;
-
+          const float rcpu_t = safe_value(id(router_cpu_temp).state);
+          const float rcpu_l = safe_value(id(router_cpu_load).state);
+          const float wan_h = safe_value(id(router_wan_uptime).state) / 3600.0f;
           it.printf(mid_x + 4, 16, id(font_section), COLOR_ON, "CPU");
           const int rcd = draw_big_number(mid_x + 4, 25, rcpu_t);
           it.printf(mid_x + 6 + rcd, 24, id(font_stat), COLOR_ON, "C");
@@ -443,13 +474,14 @@ display:
           it.printf(mid_right, 40, id(font_stat), COLOR_ON, TextAlign::TOP_RIGHT, "UP %03.0fh", wan_h);
           draw_progress_blocks(mid_right, 55, rcpu_l);
 
-          const float rmem_p = safe_value(id(rtr_mem_pct));
-          const float rmem_u = safe_value(id(rtr_mem_used)) / 1024.0f;
-          const float rmem_t = safe_value(id(rtr_mem_tot)) / 1024.0f;
-
+          const float rmem_p = safe_value(id(router_memory_percent).state);
+          const float rmem_u = safe_value(id(router_memory_used).state) / 1024.0f;
+          const float rmem_t = safe_value(id(router_memory_total).state) / 1024.0f;
           it.printf(right_x + 4, 16, id(font_section), COLOR_ON, "MEM");
           const int rmd = draw_big_number(right_x + 4, 25, rmem_p);
           it.printf(right_x + 6 + rmd, 24, id(font_stat), COLOR_ON, "%%");
           it.printf(right_right, 31, id(font_stat), COLOR_ON, TextAlign::TOP_RIGHT, "USE %.0fG", rmem_u);
           it.printf(right_right, 40, id(font_stat), COLOR_ON, TextAlign::TOP_RIGHT, "TOT %.0fG", rmem_t);
           draw_progress_blocks(right_right, 55, rmem_p);
+
+          ESP_LOGD("render", "router_page %ums  frame=%u", millis() - t0, id(display_frame_count));
