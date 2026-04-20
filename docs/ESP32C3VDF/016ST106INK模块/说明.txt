@@ -1,0 +1,2 @@
+ESP32-Arduino-VFD-016ST106INK是一个Demo项目基于Arduino平台使用PlatformIO进行构建。
+"\ESP32-Arduino-VFD-016ST106INK\lib\016st106ink"此文件是驱动文件，文件夹内的代码可以移植其他平台，例如STM32、STC51等等，你只需要在头文件实现对应平台的IO初始化和IO翻转与延时函数的宏定义即可完成移植。

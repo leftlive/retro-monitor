@@ -51,7 +51,6 @@ class RetroMonitorCoordinator(DataUpdateCoordinator[dict]):
         self.port: int = entry.data[CONF_PORT]
         self.path: str = entry.data.get(CONF_PATH, DEFAULT_PATH)
         self.url: str = f"http://{self.host}:{self.port}{self.path}"
-        self.session = async_get_clientsession(hass)
 
         # Cached device identity —— survives transient failures so that
         # device_info stays stable even when the agent is temporarily down.
@@ -75,10 +74,11 @@ class RetroMonitorCoordinator(DataUpdateCoordinator[dict]):
         # Layer 1: Transport
         # ------------------------------------------------------------------
         try:
-            async with self.session.get(self.url, timeout=10) as response:
+            session = async_get_clientsession(self.hass)
+            async with session.get(self.url, timeout=10) as response:
                 response.raise_for_status()
                 payload: Any = await response.json()
-        except (ClientError, TimeoutError) as err:
+        except (ClientError, TimeoutError, RuntimeError) as err:
             raise UpdateFailed(
                 f"Transport failure when fetching {self.url}: {err}"
             ) from err

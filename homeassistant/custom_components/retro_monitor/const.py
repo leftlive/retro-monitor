@@ -12,7 +12,5 @@ DEFAULT_PORT = 8125
 DEFAULT_SCAN_INTERVAL = 2
 DEFAULT_PATH = "/telemetry"
 
-DISPLAY_MODE_OPTIONS = ["summary", "diagnostics"]
-
 PROFILE_DESKTOP = "desktop"
 PROFILE_ROUTER = "router"

@@ -18,6 +18,10 @@ esphome:
     then:
       - lambda: |-
           retro_diag::ensure_wifi_event_handler_registered();
+      - lambda: |-
+          id(oled).set_brightness(id(ctrl_brightness_raw) / 255.0f);
+      - display.page.show: router_page
+      - component.update: oled
 
 esp32:
   board: esp32dev
@@ -25,10 +29,8 @@ esp32:
     type: arduino
 
 logger:
-  id: oled_logger
-  level: DEBUG
-  initial_level: WARN
-  baud_rate: 0
+  level: WARN
+  baud_rate: 115200
 
 api:
   homeassistant_states: true
@@ -483,6 +485,8 @@ number:
           if (pct > 100.0f) pct = 100.0f;
           float raw = roundf((pct / 100.0f) * 255.0f);
           id(ctrl_brightness_raw) = raw;
+          id(oled).set_brightness(raw / 255.0f);
+          id(oled).update();
 
   - platform: template
     id: auto_rotate_interval_control
@@ -584,22 +588,6 @@ switch:
     turn_off_action:
       - lambda: |-
           id(ctrl_auto_rotate) = false;
-
-  - platform: template
-    id: api_diagnostics_control
-    name: "API Diagnostics"
-    optimistic: true
-    restore_mode: RESTORE_DEFAULT_OFF
-    entity_category: config
-    icon: mdi:bug
-    turn_on_action:
-      - logger.set_level:
-          logger_id: oled_logger
-          level: DEBUG
-    turn_off_action:
-      - logger.set_level:
-          logger_id: oled_logger
-          level: WARN
 
 # ---------------------------------------------------------------------------
 # Intervals

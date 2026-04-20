@@ -14,7 +14,6 @@ sys.path.insert(
         "..",
         "homeassistant",
         "custom_components",
-        "retro_monitor",
     ),
 )
 
@@ -109,16 +108,16 @@ class TestSensorFieldMapping:
 
     def test_all_telemetry_fields_have_sensors(self):
         """Every numeric protocol field must map to exactly one sensor."""
-        from validator import NUMERIC_FIELDS
+        from retro_monitor.validator import DESKTOP_NUMERIC_FIELDS
 
-        uncovered = NUMERIC_FIELDS - ALL_SENSOR_FIELDS
+        uncovered = DESKTOP_NUMERIC_FIELDS - ALL_SENSOR_FIELDS
         assert uncovered == set(), f"Protocol fields without sensors: {uncovered}"
 
     def test_no_extra_sensors(self):
         """No sensor should reference a field that is not in the protocol."""
-        from validator import NUMERIC_FIELDS
+        from retro_monitor.validator import DESKTOP_NUMERIC_FIELDS
 
-        extra = ALL_SENSOR_FIELDS - NUMERIC_FIELDS
+        extra = ALL_SENSOR_FIELDS - DESKTOP_NUMERIC_FIELDS
         assert extra == set(), f"Sensors without protocol fields: {extra}"
 
 

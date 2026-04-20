@@ -1,6 +1,9 @@
 # OLED Preview
 
-This repository now includes a local browser preview for the current `256x64` SSD1322 `P1` layout.
+This repository now includes a local browser preview for the current `256x64` SSD1322 layouts:
+
+- `P1 Core`
+- `P2 Trend`
 
 Path:
 
@@ -25,12 +28,14 @@ The preview reduces that loop to:
 ## What It Simulates
 
 - The current three-column `P1` page
+- A `P2 Trend` page focused on power-line composition
 - `256x64` SSD1322 aspect ratio
 - Current font stack direction:
   - header: `UNSCII`
   - big digits: `MatrixSans`
   - other small text: `IBM Plex Mono`
 - Header line, column dividers, unit placement, and stat rows
+- Trend chart frames and line-density tuning for `P2`
 - A simple monochrome OLED-like glow
 
 ## What It Does Not Simulate Perfectly
@@ -78,7 +83,8 @@ http://127.0.0.1:4173/tools/oled-preview/index.html
 ## Suggested Workflow
 
 1. Use the `Normal / Stress / Offline` presets.
-2. Use the wider sliders to explore more aggressive changes for:
+2. Switch between `P1 Core` and `P2 Trend` with the page selector.
+3. Use the wider sliders to explore more aggressive changes for:
    - `headerSize`
    - `sectionSize`
    - `bigSize`
@@ -89,10 +95,15 @@ http://127.0.0.1:4173/tools/oled-preview/index.html
    - `unitY`
    - `statY`
    - `digitStep`
-3. Paste a real telemetry JSON snapshot into `Custom JSON` when needed.
-4. Use `Export Layout` to copy the current layout JSON.
-5. Use `Import Layout` to load a previous layout JSON and continue from that point.
-6. Paste the final JSON back into the chat so the same values can be applied to firmware.
-7. Once the preview is acceptable, copy the final values back into:
+   - `chartTop`
+   - `chartHeight`
+   - `chartGap`
+   - `chartStroke`
+   - `chartValueY`
+4. Paste a real telemetry JSON snapshot into `Custom JSON` when needed.
+5. Use `Export Layout` to copy the current layout JSON.
+6. Use `Import Layout` to load a previous layout JSON and continue from that point.
+7. Paste the final JSON back into the chat so the same values can be applied to firmware.
+8. Once the preview is acceptable, copy the final values back into:
    - `esphome/oled_display_p1_demo.yaml`
-8. Flash only for final hardware verification.
+9. Flash only for final hardware verification.

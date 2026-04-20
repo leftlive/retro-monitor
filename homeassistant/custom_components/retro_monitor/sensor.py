@@ -321,6 +321,7 @@ class RetroMonitorPayloadSensor(RetroMonitorCoordinatorEntity, SensorEntity):
         profile = self.coordinator.profile
         if profile == PROFILE_DESKTOP:
             payload = {
+                "tp": "computer",
                 "ct": data.get("cpu_temp"),
                 "cl": data.get("cpu_load"),
                 "cp": data.get("cpu_power"),
@@ -335,6 +336,7 @@ class RetroMonitorPayloadSensor(RetroMonitorCoordinatorEntity, SensorEntity):
             }
         else:
             payload = {
+                "tp": "router",
                 "nd": data.get("net_down_bps"),
                 "nu": data.get("net_up_bps"),
                 "ct": data.get("cpu_temp"),

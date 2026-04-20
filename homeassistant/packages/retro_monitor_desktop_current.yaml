@@ -1,0 +1,161 @@
+template:
+  - sensor:
+      - name: Desktop Current Display Payload
+        unique_id: retro_monitor_desktop_current_display_payload
+        icon: mdi:desktop-classic
+        state: >-
+          {% set ns = namespace(best='', best_ok=-1, best_hb=-1) %}
+          {% for eid in integration_entities('retro_monitor') %}
+            {% if eid.endswith('_display_payload') %}
+              {% set raw = states(eid) %}
+              {% if raw not in ['unknown', 'unavailable', 'none', 'None', ''] %}
+                {% set data = raw | from_json %}
+                {% if data.tp == 'computer' %}
+                  {% set ok = data.ok | int(0) %}
+                  {% set hb = data.hb | int(0) %}
+                  {% if ok > ns.best_ok or (ok == ns.best_ok and hb > ns.best_hb) %}
+                    {% set ns.best = raw %}
+                    {% set ns.best_ok = ok %}
+                    {% set ns.best_hb = hb %}
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.best if ns.best else 'unavailable' }}
+      - name: Desktop Current Source Entity
+        unique_id: retro_monitor_desktop_current_source_entity
+        icon: mdi:identifier
+        state: >-
+          {% set ns = namespace(best='', best_ok=-1, best_hb=-1) %}
+          {% for eid in integration_entities('retro_monitor') %}
+            {% if eid.endswith('_display_payload') %}
+              {% set raw = states(eid) %}
+              {% if raw not in ['unknown', 'unavailable', 'none', 'None', ''] %}
+                {% set data = raw | from_json %}
+                {% if data.tp == 'computer' %}
+                  {% set ok = data.ok | int(0) %}
+                  {% set hb = data.hb | int(0) %}
+                  {% if ok > ns.best_ok or (ok == ns.best_ok and hb > ns.best_hb) %}
+                    {% set ns.best = eid %}
+                    {% set ns.best_ok = ok %}
+                    {% set ns.best_hb = hb %}
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.best if ns.best else 'none' }}
+      - name: Desktop Current CPU Temperature
+        unique_id: retro_monitor_desktop_current_cpu_temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: >-
+          {% set raw = states('sensor.desktop_current_display_payload') %}
+          {% if raw in ['unknown', 'unavailable', 'none', 'None', ''] %}
+            {{ none }}
+          {% else %}
+            {{ (raw | from_json).ct }}
+          {% endif %}
+      - name: Desktop Current CPU Load
+        unique_id: retro_monitor_desktop_current_cpu_load
+        unit_of_measurement: "%"
+        state_class: measurement
+        state: >-
+          {% set raw = states('sensor.desktop_current_display_payload') %}
+          {% if raw in ['unknown', 'unavailable', 'none', 'None', ''] %}
+            {{ none }}
+          {% else %}
+            {{ (raw | from_json).cl }}
+          {% endif %}
+      - name: Desktop Current CPU Power
+        unique_id: retro_monitor_desktop_current_cpu_power
+        unit_of_measurement: "W"
+        state_class: measurement
+        state: >-
+          {% set raw = states('sensor.desktop_current_display_payload') %}
+          {% if raw in ['unknown', 'unavailable', 'none', 'None', ''] %}
+            {{ none }}
+          {% else %}
+            {{ (raw | from_json).cp }}
+          {% endif %}
+      - name: Desktop Current GPU Temperature
+        unique_id: retro_monitor_desktop_current_gpu_temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: >-
+          {% set raw = states('sensor.desktop_current_display_payload') %}
+          {% if raw in ['unknown', 'unavailable', 'none', 'None', ''] %}
+            {{ none }}
+          {% else %}
+            {{ (raw | from_json).gt }}
+          {% endif %}
+      - name: Desktop Current GPU Load
+        unique_id: retro_monitor_desktop_current_gpu_load
+        unit_of_measurement: "%"
+        state_class: measurement
+        state: >-
+          {% set raw = states('sensor.desktop_current_display_payload') %}
+          {% if raw in ['unknown', 'unavailable', 'none', 'None', ''] %}
+            {{ none }}
+          {% else %}
+            {{ (raw | from_json).gl }}
+          {% endif %}
+      - name: Desktop Current Memory Usage
+        unique_id: retro_monitor_desktop_current_memory_usage
+        unit_of_measurement: "%"
+        state_class: measurement
+        state: >-
+          {% set raw = states('sensor.desktop_current_display_payload') %}
+          {% if raw in ['unknown', 'unavailable', 'none', 'None', ''] %}
+            {{ none }}
+          {% else %}
+            {{ (raw | from_json).mp }}
+          {% endif %}
+      - name: Desktop Current Fan Speed Max
+        unique_id: retro_monitor_desktop_current_fan_speed_max
+        unit_of_measurement: "RPM"
+        state_class: measurement
+        state: >-
+          {% set source_entity = states('sensor.desktop_current_source_entity') %}
+          {% if source_entity in ['unknown', 'unavailable', 'none', 'None', ''] %}
+            {{ none }}
+          {% else %}
+            {% set fan_entity = source_entity | replace('_display_payload', '_fan_speed_max') %}
+            {{ states(fan_entity) | float(none) }}
+          {% endif %}
+      - name: Desktop Current Disk Temperature Max
+        unique_id: retro_monitor_desktop_current_disk_temperature_max
+        unit_of_measurement: "°C"
+        state_class: measurement
+        state: >-
+          {% set source_entity = states('sensor.desktop_current_source_entity') %}
+          {% if source_entity in ['unknown', 'unavailable', 'none', 'None', ''] %}
+            {{ none }}
+          {% else %}
+            {% set disk_entity = source_entity | replace('_display_payload', '_disk_temperature_max') %}
+            {{ states(disk_entity) | float(none) }}
+          {% endif %}
+      - name: Desktop Current System Power Estimated
+        unique_id: retro_monitor_desktop_current_system_power_estimated
+        unit_of_measurement: "W"
+        state_class: measurement
+        state: >-
+          {% set raw = states('sensor.desktop_current_display_payload') %}
+          {% if raw in ['unknown', 'unavailable', 'none', 'None', ''] %}
+            {{ none }}
+          {% else %}
+            {{ (raw | from_json).sp }}
+          {% endif %}
+
+  - binary_sensor:
+      - name: Desktop Current Source OK
+        unique_id: retro_monitor_desktop_current_source_ok
+        device_class: connectivity
+        state: >-
+          {% set raw = states('sensor.desktop_current_display_payload') %}
+          {% if raw in ['unknown', 'unavailable', 'none', 'None', ''] %}
+            false
+          {% else %}
+            {{ (raw | from_json).ok | int(0) == 1 }}
+          {% endif %}

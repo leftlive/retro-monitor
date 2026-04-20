@@ -9,6 +9,7 @@ import copy
 import json
 import sys
 import os
+import importlib.util
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -23,7 +24,6 @@ _HA_COMPONENT_PATH = os.path.join(
     "..",
     "homeassistant",
     "custom_components",
-    "retro_monitor",
 )
 sys.path.insert(0, _HA_COMPONENT_PATH)
 
@@ -56,7 +56,24 @@ sys.modules.setdefault("homeassistant.helpers.entity", MagicMock())
 # but still exercises our actual logic. The simplest approach is to test
 # the validator + HTTP fetch logic directly.
 
-from validator import PayloadValidationError, validate_payload  # noqa: E402
+_COMPONENT_ROOT = os.path.join(_HA_COMPONENT_PATH, "retro_monitor")
+_CONST_SPEC = importlib.util.spec_from_file_location(
+    "retro_monitor.const", os.path.join(_COMPONENT_ROOT, "const.py")
+)
+_CONST_MODULE = importlib.util.module_from_spec(_CONST_SPEC)
+sys.modules["retro_monitor.const"] = _CONST_MODULE
+_CONST_SPEC.loader.exec_module(_CONST_MODULE)
+
+_VALIDATOR_SPEC = importlib.util.spec_from_file_location(
+    "retro_monitor.validator", os.path.join(_COMPONENT_ROOT, "validator.py")
+)
+_VALIDATOR_MODULE = importlib.util.module_from_spec(_VALIDATOR_SPEC)
+_VALIDATOR_MODULE.__package__ = "retro_monitor"
+sys.modules["retro_monitor.validator"] = _VALIDATOR_MODULE
+_VALIDATOR_SPEC.loader.exec_module(_VALIDATOR_MODULE)
+
+PayloadValidationError = _VALIDATOR_MODULE.PayloadValidationError
+validate_payload = _VALIDATOR_MODULE.validate_payload
 
 # ---------------------------------------------------------------------------
 # Fixtures

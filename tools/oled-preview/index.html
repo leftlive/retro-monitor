@@ -280,6 +280,13 @@
         <div class="group">
           <h2>Data</h2>
           <label>
+            <span><strong>Page</strong><strong id="page-name">p1</strong></span>
+            <select id="page-select">
+              <option value="p1">P1 Core</option>
+              <option value="p2">P2 Trend</option>
+            </select>
+          </label>
+          <label>
             <span><strong>Sample</strong><strong id="sample-name">normal</strong></span>
             <select id="sample-select">
               <option value="normal">Normal</option>
@@ -290,7 +297,7 @@
           </label>
           <label>
             <span><strong>Host Label</strong><strong>Header Text</strong></span>
-            <input id="host-label" type="text" value="NOX V1.09" />
+            <input id="host-label" type="text" value="NOX V0.01" />
           </label>
           <label>
             <span><strong>Custom JSON</strong><strong>Paste a snapshot</strong></span>
@@ -315,7 +322,7 @@
         </div>
 
         <div class="group">
-          <h2>Layout</h2>
+          <h2 id="layout-title">Layout</h2>
           <div id="layout-controls"></div>
         </div>
       </aside>
@@ -324,7 +331,7 @@
         <div class="preview-bar">
           <div>
             <h2>256x64 SSD1322</h2>
-            <p>Current ESPHome P1 layout with live coordinate controls</p>
+            <p>P1 core page and P2 power-trend page with live coordinate controls</p>
           </div>
           <div class="button-row">
             <button id="export-png" type="button">Export PNG</button>
@@ -435,7 +442,7 @@
         headerSize: 8,
         sectionSize: 8,
         bigSize: 22,
-        statSize: 9,
+        statSize: 8,
         lineY: 9,
         sectionY: 12,
         bigY: 16,
@@ -455,6 +462,18 @@
         barRenderBiasY: -2,
         column1: 85,
         column2: 171,
+        chartTop: 16,
+        chartHeight: 45,
+        chartGap: 6,
+        chartLeft: 92,
+        chartRight: 248,
+        chartStroke: 2,
+        chartLabelY: 12,
+        chartValueY: 43,
+        chartBottomPad: 2,
+        chartTracePct: 87,
+        leftValueY: 34,
+        leftValueGap: 10,
       };
 
       const controls = [
@@ -479,11 +498,25 @@
         ["unitRenderBiasY", "Unit Bias Y", -6, 6, 1],
         ["statRenderBiasY", "Stat Bias Y", -6, 6, 1],
         ["barRenderBiasY", "Bar Bias Y", -6, 6, 1],
+        ["chartTop", "Chart Top", 10, 24, 1],
+        ["chartHeight", "Chart Height", 20, 49, 1],
+        ["chartGap", "Chart Gap", 2, 12, 1],
+        ["chartLeft", "Chart Left", 86, 120, 1],
+        ["chartRight", "Chart Right", 220, 252, 1],
+        ["chartStroke", "Chart Stroke", 1, 3, 1],
+        ["chartLabelY", "Chart Label Y", 8, 24, 1],
+        ["chartValueY", "Bottom Value Y", 44, 60, 1],
+        ["chartBottomPad", "Chart Bottom Pad", 0, 10, 1],
+        ["chartTracePct", "Trace Width %", 70, 95, 1],
+        ["leftValueY", "Left Value Y", 24, 48, 1],
+        ["leftValueGap", "Left Value Gap", 7, 14, 1],
       ];
 
       const canvas = document.getElementById("oled");
       const ctx = canvas.getContext("2d");
       const sampleSelect = document.getElementById("sample-select");
+      const pageSelect = document.getElementById("page-select");
+      const pageName = document.getElementById("page-name");
       const sampleName = document.getElementById("sample-name");
       const hostLabelInput = document.getElementById("host-label");
       const customJson = document.getElementById("custom-json");
@@ -498,15 +531,58 @@
       const scaleValue = document.getElementById("scale-value");
       const glowValue = document.getElementById("glow-value");
       const layoutControls = document.getElementById("layout-controls");
+      const layoutTitle = document.getElementById("layout-title");
 
       const state = {
+        page: "p2",
         sample: "normal",
         data: structuredClone(samples.normal),
-        hostLabel: "NOX V1.09",
+        hostLabel: "NOX V0.01",
         layout: structuredClone(defaultLayout),
       };
 
       const sliderMap = new Map();
+      const controlNodeMap = new Map();
+
+      const p1ControlKeys = new Set([
+        "headerSize",
+        "sectionSize",
+        "bigSize",
+        "statSize",
+        "lineY",
+        "sectionY",
+        "bigY",
+        "unitY",
+        "stat1Y",
+        "stat2Y",
+        "barY",
+        "digitStep",
+        "barW",
+        "barH",
+        "barGap",
+        "barOnGray",
+        "barOffGray",
+        "bigRenderBiasY",
+        "unitRenderBiasY",
+        "statRenderBiasY",
+        "barRenderBiasY",
+      ]);
+
+      const p2ControlKeys = new Set([
+        "headerSize",
+        "sectionSize",
+        "statSize",
+        "lineY",
+        "chartTop",
+        "chartHeight",
+        "chartLeft",
+        "chartRight",
+        "chartStroke",
+        "chartBottomPad",
+        "chartTracePct",
+        "leftValueY",
+        "leftValueGap",
+      ]);
 
       function safeValue(value, fallback = 0) {
         return typeof value === "number" && !Number.isNaN(value) ? value : fallback;
@@ -514,6 +590,46 @@
 
       function gib(mib) {
         return safeValue(mib) / 1024;
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function buildTrendSeries(base, points, amplitude, phase = 0, floor = 0) {
+        const series = [];
+        for (let i = 0; i < points; i += 1) {
+          const drift = Math.sin((i + phase) * 0.38) * amplitude;
+          const spike = Math.sin((i + phase) * 1.17) * amplitude * 0.32;
+          const pulse = Math.cos((i + phase) * 0.19) * amplitude * 0.18;
+          series.push(Math.max(floor, base + drift + spike + pulse));
+        }
+        return series;
+      }
+
+      function getTrendPayload(data, sample) {
+        if (sample === "offline" || !data.source_ok) {
+          return {
+            system: [],
+            cpu: [],
+            gpu: [],
+          };
+        }
+
+        const baseSystem = safeValue(data.system_power_estimated);
+        const baseCpu = safeValue(data.cpu_power);
+        const baseGpu = safeValue(data.gpu_power);
+
+        const profile =
+          sample === "stress"
+            ? { points: 32, sysAmp: 78, cpuAmp: 34, gpuAmp: 58 }
+            : { points: 32, sysAmp: 32, cpuAmp: 18, gpuAmp: 22 };
+
+        return {
+          system: buildTrendSeries(baseSystem, profile.points, profile.sysAmp, 0, 0),
+          cpu: buildTrendSeries(baseCpu, profile.points, profile.cpuAmp, 4, 0),
+          gpu: buildTrendSeries(baseGpu, profile.points, profile.gpuAmp, 9, 0),
+        };
       }
 
       function drawText(text, x, y, font, alpha = 1) {
@@ -571,36 +687,90 @@
         }
       }
 
-      function render() {
-        const layout = state.layout;
-        document.documentElement.style.setProperty("--scale", layout.scale);
-        scaleValue.textContent = `${layout.scale}x`;
-        glowValue.textContent = `${layout.glow}px`;
-        sampleName.textContent = state.sample;
-        layoutExport.value = JSON.stringify(
-          {
-            hostLabel: state.hostLabel,
-            sample: state.sample,
-            layout: state.layout,
-          },
-          null,
-          2
-        );
+      function drawTrendFrame(x, y, w, h, alpha = 0.28) {
+        ctx.save();
+        ctx.strokeStyle = `rgba(243,247,251,${alpha})`;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 0.5, y + 0.5, w, h);
+        ctx.beginPath();
+        ctx.moveTo(x + 0.5, y + h / 2 + 0.5);
+        ctx.lineTo(x + w + 0.5, y + h / 2 + 0.5);
+        ctx.moveTo(x + 0.5, y + h - 0.5);
+        ctx.lineTo(x + w + 0.5, y + h - 0.5);
+        ctx.stroke();
+        ctx.restore();
+      }
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#070b10";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.fillStyle = "rgba(255,255,255,0.02)";
-        for (let x = 0; x < canvas.width; x += 2) {
-          for (let y = 0; y < canvas.height; y += 2) {
-            ctx.fillRect(x, y, 1, 1);
-          }
+      function drawTechGrid(x, y, w, h) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(243,247,251,0.08)";
+        ctx.lineWidth = 1;
+        for (let gy = y + 5; gy < y + h; gy += 6) {
+          ctx.beginPath();
+          ctx.moveTo(x, gy + 0.5);
+          ctx.lineTo(x + w, gy + 0.5);
+          ctx.stroke();
         }
+        for (let gx = x + 12; gx < x + w; gx += 12) {
+          ctx.beginPath();
+          ctx.moveTo(gx + 0.5, y);
+          ctx.lineTo(gx + 0.5, y + h);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
 
-        drawText(state.hostLabel, 2, 0, `${layout.headerSize}px "UnsciiPreview"`);
-        drawText("MAC PANEL", 95, 0, `${layout.headerSize}px "UnsciiPreview"`);
-        drawText(state.data.source_ok ? "READY" : "ALERT", 215, 0, `${layout.headerSize}px "UnsciiPreview"`);
+      function drawTrendLine(series, x, y, w, h, color, strokeWidth = 1) {
+        if (!series || series.length < 2) return;
+        const values = series.map((v) => safeValue(v));
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const span = max - min || 1;
+        const step = w / (values.length - 1);
+
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = strokeWidth;
+        ctx.beginPath();
+
+        values.forEach((value, index) => {
+          const px = x + step * index;
+          const normalized = (value - min) / span;
+          const py = y + h - normalized * h;
+          if (index === 0) {
+            ctx.moveTo(px, py);
+          } else {
+            ctx.lineTo(px, py);
+          }
+        });
+
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawBlinkZone(x, y, w, h) {
+        const phase = Date.now() % 1000;
+        const t = phase <= 500 ? phase / 500 : (1000 - phase) / 500;
+        const alpha = 0.2 + t * 0.8;
+        const barWidth = 6;
+        const bx = x + Math.floor((w - barWidth) / 2);
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(243,247,251,0.10)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + 0.5, y);
+        ctx.lineTo(x + 0.5, y + h);
+        ctx.stroke();
+        ctx.fillStyle = `rgba(243,247,251,${alpha.toFixed(3)})`;
+        ctx.fillRect(bx, y, barWidth, h);
+        ctx.restore();
+      }
+
+      function renderHeader(title, statusText) {
+        drawText(state.hostLabel, 2, 0, `${state.layout.headerSize}px "UnsciiPreview"`);
+        drawText(title, 95, 0, `${state.layout.headerSize}px "UnsciiPreview"`);
+        drawText(statusText, 215, 0, `${state.layout.headerSize}px "UnsciiPreview"`);
         if (Math.floor(Date.now() / 500) % 2 === 0) {
           ctx.fillStyle = "#f3f7fb";
           ctx.fillRect(250, 1, 4, 4);
@@ -612,8 +782,15 @@
         ctx.strokeStyle = "#f3f7fb";
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(0, layout.lineY + 0.5);
-        ctx.lineTo(256, layout.lineY + 0.5);
+        ctx.moveTo(0, state.layout.lineY + 0.5);
+        ctx.lineTo(256, state.layout.lineY + 0.5);
+        ctx.stroke();
+      }
+
+      function renderP1(layout) {
+        renderHeader("MAC PANEL", state.data.source_ok ? "READY" : "ALERT");
+
+        ctx.beginPath();
         ctx.moveTo(layout.column1 + 0.5, layout.lineY + 1);
         ctx.lineTo(layout.column1 + 0.5, 64);
         ctx.moveTo(layout.column2 + 0.5, layout.lineY + 1);
@@ -623,7 +800,6 @@
         if (!state.data.source_ok) {
           drawText("SOURCE", 84, 20, `${layout.sectionSize}px "IBM Plex Mono"`);
           drawText("OFF", 94, 34, `${layout.sectionSize}px "IBM Plex Mono"`);
-          canvas.style.boxShadow = `0 0 0 1px rgba(255,255,255,0.06), 0 0 ${layout.glow}px rgba(243,247,251,0.14)`;
           return;
         }
 
@@ -683,6 +859,90 @@
           );
           drawProgressBlocks(block.right, layout.barY + layout.barRenderBiasY, block.progress, layout);
         }
+      }
+
+      function renderP2(layout) {
+        renderHeader("P2 TREND", state.data.source_ok ? "LIVE" : "ALERT");
+
+        if (!state.data.source_ok) {
+          drawText("TREND", 96, 20, `${layout.sectionSize}px "IBM Plex Mono"`);
+          drawText("OFF", 104, 34, `${layout.sectionSize}px "IBM Plex Mono"`);
+          return;
+        }
+
+        const series = getTrendPayload(state.data, state.sample);
+        const dividerX = 86;
+        const leftX = 6;
+        const chartX = clamp(layout.chartLeft, dividerX + 4, 116);
+        const chartW = clamp(layout.chartRight - chartX, 120, 160);
+        const chartY = layout.chartTop;
+        const chartH = clamp(layout.chartHeight, 24, 49);
+        const tracePct = clamp(layout.chartTracePct, 70, 95) / 100;
+        const traceW = Math.max(40, Math.floor(chartW * tracePct));
+        const blinkX = chartX + traceW;
+        const blinkW = Math.max(8, chartW - traceW);
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(243,247,251,0.22)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(dividerX + 0.5, 12);
+        ctx.lineTo(dividerX + 0.5, 63);
+        ctx.stroke();
+        ctx.restore();
+
+        drawText("POWER TREND", leftX, 18, `${layout.sectionSize + 2}px "MatrixSansPreview"`);
+
+        const sysText = `SYSTEM ${String(Math.round(safeValue(state.data.system_power_estimated))).padStart(3, "0")}W`;
+        const cpuText = `CPU ${String(Math.round(safeValue(state.data.cpu_power))).padStart(3, "0")}W`;
+        const gpuText = `GPU ${String(Math.round(safeValue(state.data.gpu_power))).padStart(3, "0")}W`;
+
+        drawText(sysText, leftX, layout.leftValueY, `${layout.statSize}px "IBM Plex Mono"`, 0.96);
+        drawText(cpuText, leftX, layout.leftValueY + layout.leftValueGap, `${layout.statSize}px "IBM Plex Mono"`, 0.62);
+        drawText(gpuText, leftX, layout.leftValueY + layout.leftValueGap * 2, `${layout.statSize}px "IBM Plex Mono"`, 0.48);
+
+        drawTrendFrame(chartX, chartY, chartW, chartH, 0.22);
+        drawTechGrid(chartX + 1, chartY + 1, chartW - 2, chartH - 2);
+        drawTrendLine(series.system, chartX + 2, chartY + 2, traceW - 4, chartH - 4, "rgba(243,247,251,1)", layout.chartStroke);
+        drawTrendLine(series.cpu, chartX + 2, chartY + 2, traceW - 4, chartH - 4, "rgba(243,247,251,0.30)", 1);
+        drawTrendLine(series.gpu, chartX + 2, chartY + 2, traceW - 4, chartH - 4, "rgba(243,247,251,0.20)", 1);
+        drawBlinkZone(blinkX, chartY + 1, blinkW - 1, chartH - 2);
+      }
+
+      function render() {
+        const layout = state.layout;
+        document.documentElement.style.setProperty("--scale", layout.scale);
+        scaleValue.textContent = `${layout.scale}x`;
+        glowValue.textContent = `${layout.glow}px`;
+        pageName.textContent = state.page;
+        sampleName.textContent = state.sample;
+        layoutExport.value = JSON.stringify(
+          {
+            page: state.page,
+            hostLabel: state.hostLabel,
+            sample: state.sample,
+            layout: state.layout,
+          },
+          null,
+          2
+        );
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#070b10";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "rgba(255,255,255,0.02)";
+        for (let x = 0; x < canvas.width; x += 2) {
+          for (let y = 0; y < canvas.height; y += 2) {
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+
+        if (state.page === "p2") {
+          renderP2(layout);
+        } else {
+          renderP1(layout);
+        }
 
         canvas.style.boxShadow = `0 0 0 1px rgba(255,255,255,0.06), 0 0 ${layout.glow}px rgba(243,247,251,0.14)`;
       }
@@ -714,8 +974,17 @@
           });
 
           sliderMap.set(key, value);
+          controlNodeMap.set(key, wrapper);
           wrapper.append(label, input);
           layoutControls.appendChild(wrapper);
+        }
+      }
+
+      function syncVisibleControls() {
+        const visibleKeys = state.page === "p2" ? p2ControlKeys : p1ControlKeys;
+        layoutTitle.textContent = state.page === "p2" ? "P2 Layout" : "P1 Layout";
+        for (const [key, node] of controlNodeMap.entries()) {
+          node.style.display = visibleKeys.has(key) ? "block" : "none";
         }
       }
 
@@ -761,8 +1030,14 @@
         render();
       });
 
+      pageSelect.addEventListener("change", () => {
+        state.page = pageSelect.value;
+        syncVisibleControls();
+        render();
+      });
+
       hostLabelInput.addEventListener("input", () => {
-        state.hostLabel = hostLabelInput.value || "NOX V1.09";
+        state.hostLabel = hostLabelInput.value || "NOX V0.01";
         render();
       });
 
@@ -780,13 +1055,16 @@
 
       resetLayoutButton.addEventListener("click", () => {
         state.layout = structuredClone(defaultLayout);
+        state.page = "p2";
         state.sample = "normal";
         state.data = structuredClone(samples.normal);
+        pageSelect.value = "p2";
         sampleSelect.value = "normal";
-        hostLabelInput.value = "NOX V1.09";
-        state.hostLabel = "NOX V1.09";
+        hostLabelInput.value = "NOX V0.01";
+        state.hostLabel = "NOX V0.01";
         refreshCustomJson();
         syncControls();
+        syncVisibleControls();
         render();
       });
 
@@ -818,6 +1096,10 @@
             state.hostLabel = parsed.hostLabel;
             hostLabelInput.value = parsed.hostLabel;
           }
+          if (parsed.page === "p1" || parsed.page === "p2") {
+            state.page = parsed.page;
+            pageSelect.value = parsed.page;
+          }
           if (parsed.sample && samples[parsed.sample]) {
             state.sample = parsed.sample;
             state.data = structuredClone(samples[parsed.sample]);
@@ -831,6 +1113,7 @@
           }
           refreshCustomJson();
           syncControls();
+          syncVisibleControls();
           render();
         } catch (error) {
           alert(`Invalid layout JSON: ${error.message}`);
@@ -840,8 +1123,10 @@
       buildControls();
       scaleInput.value = defaultLayout.scale;
       glowInput.value = defaultLayout.glow;
+      pageSelect.value = state.page;
       refreshCustomJson();
       syncControls();
+      syncVisibleControls();
       render();
     </script>
   </body>

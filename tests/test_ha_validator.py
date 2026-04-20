@@ -6,22 +6,34 @@ These are pure-Python unit tests with no Home Assistant dependency.
 import sys
 import os
 import copy
+import importlib.util
 import pytest
 
-# Make the HA custom component importable without installing HA.
-sys.path.insert(
-    0,
-    os.path.join(
-        os.path.dirname(__file__),
-        "..",
-        "homeassistant",
-        "custom_components",
-        "retro_monitor",
-    ),
+_COMPONENT_ROOT = os.path.join(
+    os.path.dirname(__file__),
+    "..",
+    "homeassistant",
+    "custom_components",
+    "retro_monitor",
 )
-# Also need the parent to allow `from validator import ...`
-# We import directly since there is no HA runtime.
-from validator import PayloadValidationError, validate_payload  # noqa: E402
+
+_CONST_SPEC = importlib.util.spec_from_file_location(
+    "retro_monitor.const", os.path.join(_COMPONENT_ROOT, "const.py")
+)
+_CONST_MODULE = importlib.util.module_from_spec(_CONST_SPEC)
+sys.modules["retro_monitor.const"] = _CONST_MODULE
+_CONST_SPEC.loader.exec_module(_CONST_MODULE)
+
+_VALIDATOR_SPEC = importlib.util.spec_from_file_location(
+    "retro_monitor.validator", os.path.join(_COMPONENT_ROOT, "validator.py")
+)
+_VALIDATOR_MODULE = importlib.util.module_from_spec(_VALIDATOR_SPEC)
+_VALIDATOR_MODULE.__package__ = "retro_monitor"
+sys.modules["retro_monitor.validator"] = _VALIDATOR_MODULE
+_VALIDATOR_SPEC.loader.exec_module(_VALIDATOR_MODULE)
+
+PayloadValidationError = _VALIDATOR_MODULE.PayloadValidationError
+validate_payload = _VALIDATOR_MODULE.validate_payload
 
 
 # ---------------------------------------------------------------------------
@@ -130,23 +142,23 @@ class TestRejections:
 
 class TestMissingFields:
     def test_missing_source_ok(self):
-        with pytest.raises(PayloadValidationError, match="source_ok"):
+        with pytest.raises(PayloadValidationError, match="supported profile"):
             validate_payload(_payload_without("source_ok"))
 
     def test_missing_timestamp(self):
-        with pytest.raises(PayloadValidationError, match="timestamp"):
+        with pytest.raises(PayloadValidationError, match="supported profile"):
             validate_payload(_payload_without("timestamp"))
 
     def test_missing_cpu_temp(self):
-        with pytest.raises(PayloadValidationError, match="cpu_temp"):
+        with pytest.raises(PayloadValidationError, match="supported profile"):
             validate_payload(_payload_without("cpu_temp"))
 
     def test_missing_device_id(self):
-        with pytest.raises(PayloadValidationError, match="device_id"):
+        with pytest.raises(PayloadValidationError, match="supported profile"):
             validate_payload(_payload_without("device_id"))
 
     def test_missing_multiple_fields(self):
-        with pytest.raises(PayloadValidationError, match="missing required"):
+        with pytest.raises(PayloadValidationError, match="supported profile"):
             validate_payload(_payload_without("cpu_temp", "gpu_temp", "hostname"))
 
 
@@ -178,14 +190,8 @@ class TestTypeErrors:
             validate_payload(_payload(cpu_temp="hot"))
 
     def test_numeric_field_bool_rejected(self):
-        """bool is a subclass of int in Python but not a valid sensor value."""
-        # Note: Python isinstance(True, int) is True, so bools pass the
-        # number check.  This is acceptable — the agent never sends bools
-        # for numeric fields in practice.
-        # This test documents that behaviour rather than demanding rejection.
-        p = _payload(cpu_temp=True)
-        # If implementation treats bool as int, this passes:
-        validate_payload(p)
+        with pytest.raises(PayloadValidationError, match="cpu_temp.*number"):
+            validate_payload(_payload(cpu_temp=True))
 
     def test_numeric_field_list(self):
         with pytest.raises(PayloadValidationError, match="gpu_load.*number"):

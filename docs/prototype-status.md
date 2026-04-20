@@ -74,12 +74,13 @@ Working now without shelling out to CLI tools:
   - `net_down_bps`
   - `disk_activity_percent`
 
-Still unresolved:
+Current caveat:
 
 - `system_power_estimated`
-  - optional Intel Power Gadget platform-power path is now wired in
-  - current machine still reports platform energy as unavailable, so direct whole-system power remains unavailable
-  - the agent now falls back to a conservative estimate: `cpu_power + gpu_power + 20W base`
+  - optional Intel Power Gadget platform-power path is wired in
+  - current machine still reports platform energy as unavailable
+  - the published value falls back to a conservative estimate: `cpu_power + gpu_power + 20W base`
+  - this is useful for display and trend context, but should not be treated as wall power
 
 ## Reference Absorption
 
@@ -100,19 +101,17 @@ The current prototype has already absorbed these ideas:
 - from Intel Power Gadget:
   - optional library-backed platform power path without shelling out to CLI tools
 
-## Immediate Next Step
+## Current Integration Status
 
-Best next prototype improvement:
+The Python agent is no longer the only active prototype surface:
 
-- investigate a reliable direct whole-system source for machines where both SMC `PSTR` and Intel Power Gadget platform energy are unavailable
-- target result:
-  - fill `system_power_estimated` without introducing CLI dependencies
-
-That is now the highest-value remaining gap because both disk temperature and CPU package power are already coming from direct low-level paths.
+- Home Assistant now consumes the macOS endpoint at `192.168.50.199:8125/telemetry`
+- HA exposes hidden display payload sources for aggregation
+- `desktop_current_*` template entities provide the stable computer state consumed by OLED and VFD
+- OLED and VFD controls now live on their ESPHome devices, not in the `retro_monitor` integration
 
 ## Current Todo
 
-- validate `system_power_estimated` as real whole-system power, not just a guessed sum
-- keep “whole-system power” as a first-class backlog item until the source is stable enough for the schema
-- harden Home Assistant payload validation against malformed telemetry responses
+- keep “whole-system power” as an estimation caveat until a better direct source is available
+- validate Windows desktop provider against the same schema and `desktop_current_*` aggregation layer
 - move the mature telemetry paths into the Go agent after the Python contract is stable

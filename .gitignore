@@ -10,5 +10,13 @@ go-agent/retro-monitor-agent
 dist/
 build/
 references/
+**/.pio/
+**/.vscode/
+*.bin
+*.elf
+*.map
+*.o
+*.d
+*.a
 windows-agent/**/bin/
 windows-agent/**/obj/

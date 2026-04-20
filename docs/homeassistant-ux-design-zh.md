@@ -1,6 +1,6 @@
 # Home Assistant 集成 — UX 设计文档
 
-> 版本: v1 · 最后更新: 2026-03-26
+> 版本: v1 · 最后更新: 2026-04-20
 
 ## 1. 目标用户
 
@@ -36,9 +36,10 @@
     本地传感器                                  Lovelace / 自动化
 ```
 
-- HA 是**观测和配置中心**，而不是数据源。
+- HA 是**观测、聚合和设备接入中心**，而不是底层数据源。
 - HA **不**进行单位转换 —— Agent 会完成所有数据的标准化处理。
 - HA 在原始遥测数据之上提供**实体状态、历史记录、告警功能**。
+- 显示屏控制不属于 `retro_monitor` 集成；OLED / VFD 控制实体由各自 ESPHome 设备提供。
 
 ---
 
@@ -74,7 +75,7 @@
 | Memory Total | `memory_total_mb` | MiB | 静态值，很少变化 |
 | Fan Speed (Average) | `fan_rpm_avg` | RPM | 相比最大 RPM，其实际指导意义较小 |
 | Disk Temperature (Max) | `disk_temp_max` | °C | 优先级低于磁盘活动度 |
-| System Power (Estimated) | `system_power_estimated` | W | 目前尚未可靠填充数据 |
+| System Power (Estimated) | `system_power_estimated` | W | 当前为估算值，适合显示和趋势参考 |
 
 ### 4.3 二进制传感器 (诊断)
 
@@ -85,16 +86,22 @@
 - 附加属性: `sample_timestamp`, `agent_platform`.
 - 当状态为 **off** 时: 表示数据降级 —— 传感器虽然仍显示数值，但应谨慎对待。
 
-### 4.4 配置实体 (本地 OLED 控制)
+### 4.4 显示控制实体归属
 
-| 实体名称 | 类型 | 默认值 | 类别 |
-|-------------|------|---------|----------|
-| Display Mode | Select | `summary` | CONFIG |
-| Display Brightness | Number (0–255) | 180 | CONFIG |
-| Display Page Interval | Number (5–60 s) | 10 | CONFIG |
-| Display Auto Rotate | Switch | on | CONFIG |
+`retro_monitor` 集成不再创建显示控制实体。
 
-> **v1 状态**: 这些目前仅为 HA 本地状态。在 v2 的写回 API 实现之前，它们**不会**推送到 Agent。它们现在的意义在于让用户预设偏好，并支持自动化调用（例如：“夜间降低亮度”自动化通过修改此实体的目标亮度来实现）。
+当前控制实体归属:
+
+| 设备 | 控制实体 |
+|-------------|------|
+| OLED ESPHome | `Display Power`, `Brightness`, `Current Page`, `Auto Rotate`, `Auto Rotate Interval`, `API Diagnostics` |
+| VFD ESPHome | `Display Power`, `Brightness`, `Animation`, `Sleep Timeout`, `Auto Rotate Interval`, `WiFi Signal`, `Restart` |
+
+设计原因:
+
+- 屏幕亮度、动画、页面状态是终端本地行为。
+- HA 集成负责遥测数据，不承担显示设备控制。
+- 同一套电脑数据可同时被 OLED 与 VFD 消费。
 
 ---
 
@@ -205,7 +212,7 @@
 | 配置流程 | 无连接测试 | 包含实时连接测试和明确的错误消息 |
 | `source_ok=false` | 静默处理 —— 被视为成功获取数据 | 通过二进制传感器和日志明确提示降级 |
 | 设备身份 | 首次加载可能失败 | 缓存了 `last_device_info`，能在网络波动时保持稳定 |
-| OLED 实体 | 与设备脱离，独立存在 | 关联到特定设备，并标记为 CONFIG 类别 |
+| 显示控制 | 由 `retro_monitor` 创建本地偏好实体 | 由 OLED / VFD ESPHome 设备各自创建真实控制实体 |
 | 实体命名 | 工程命名风格 (`Fan RPM Max`) | 用户友好风格 (`Fan Speed (Max)`) |
 
 ---
@@ -214,6 +221,6 @@
 
 以下内容无法仅靠 HA 集成层解决：
 
-1. **`system_power_estimated`** — 目前始终为 `null`。主 Agent 需要在遥测源层面稳定后，此传感器才有实际作用。
-2. **写回 API (v2)** — OLED 控制实体目前仅为本地。需要一个 `POST /control` 端点来将设置推送到 Agent。
+1. **`system_power_estimated`** — 当前为保守估算值。若未来需要精确功耗，需要接入可靠的硬件级整机功耗来源。
+2. **Windows 接入验证** — Windows agent 接入后，需要验证 `desktop_current_*` 聚合层在 macOS / Windows 同时在线时不会频繁跳源。
 3. **协议版本字段** — 建议在 Payload 中增加 `schema_version` 键，以便于 HA 集成后续实现优雅的库版本兼容。
