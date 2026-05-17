@@ -323,6 +323,6 @@ VFD 的 `CGRAM` 只有 8 个自定义字符位，字形设计必须非常克制�
 1. `esphome/vfd_016st106ink_ha_monitor.yaml`
 2. `esphome/includes/vfd_016st106ink/vfd_016st106ink.h`
 3. `docs/esp32c3-vfd-product-requirements-zh.md`
-4. `docs/prototype-status.md`
+4. `docs/project-progress-zh.md`
 
 这 4 个文件基本能说明当前 VFD 分支和主线服务端的真实状态。

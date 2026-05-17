@@ -33,7 +33,7 @@ public sealed class HardwareMonitorReader : IDisposable
             var cpuTemp = PickCpuTemperature(sensors);
             var cpuClock = PickCpuClock(sensors);
             var cpuPower = PickCpuPower(sensors);
-            var gpuTemp = PickGpuMetric(sensors, "Temperature");
+            var gpuTemp = PickGpuMetric(sensors, "Temperature", "GPU Core", "Core");
             var gpuLoad = PickGpuMetric(sensors, "Load", "Core", "D3D", "GPU Core");
             var gpuClock = PickGpuMetric(sensors, "Clock", "Core");
             var gpuPower = PickGpuMetric(sensors, "Power", "Total", "Board", "Package");
@@ -148,11 +148,9 @@ public sealed class HardwareMonitorReader : IDisposable
             return preferred.Max();
         }
 
-        return sensors
+        return MaxOrNull(sensors
             .Where(s => IsCpuSensor(s) && IsSensorType(s, "Temperature"))
-            .Select(s => s.Value!.Value)
-            .DefaultIfEmpty()
-            .Max();
+            .Select(s => s.Value!.Value));
     }
 
     private static double? PickCpuClock(IEnumerable<RawSensor> sensors)
@@ -167,11 +165,9 @@ public sealed class HardwareMonitorReader : IDisposable
             return preferred.Max();
         }
 
-        return sensors
+        return MaxOrNull(sensors
             .Where(s => IsCpuSensor(s) && IsSensorType(s, "Clock"))
-            .Select(s => s.Value!.Value)
-            .DefaultIfEmpty()
-            .Max();
+            .Select(s => s.Value!.Value));
     }
 
     private static double? PickCpuPower(IEnumerable<RawSensor> sensors)
@@ -186,11 +182,9 @@ public sealed class HardwareMonitorReader : IDisposable
             return preferred.Max();
         }
 
-        return sensors
+        return MaxOrNull(sensors
             .Where(s => IsCpuSensor(s) && IsSensorType(s, "Power"))
-            .Select(s => s.Value!.Value)
-            .DefaultIfEmpty()
-            .Max();
+            .Select(s => s.Value!.Value));
     }
 
     private static double? PickGpuMetric(IEnumerable<RawSensor> sensors, string sensorType, params string[] preferredNames)
@@ -214,10 +208,7 @@ public sealed class HardwareMonitorReader : IDisposable
             }
         }
 
-        return candidates
-            .Select(s => s.Value!.Value)
-            .DefaultIfEmpty()
-            .Max();
+        return MaxOrNull(candidates.Select(s => s.Value!.Value));
     }
 
     private static bool IsCpuSensor(RawSensor sensor) => sensor.HardwareType == "Cpu";
@@ -238,6 +229,12 @@ public sealed class HardwareMonitorReader : IDisposable
         parts.Any(part => sensor.SensorName.Contains(part, StringComparison.OrdinalIgnoreCase));
 
     private static double? Round1(double? value) => value.HasValue ? Math.Round(value.Value, 1) : null;
+
+    private static double? MaxOrNull(IEnumerable<float> values)
+    {
+        var snapshot = values.ToArray();
+        return snapshot.Length > 0 ? snapshot.Max() : null;
+    }
 
     private sealed record RawSensor(
         string HardwareType,

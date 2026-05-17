@@ -16,14 +16,14 @@
 已阅读的关键资料：
 
 - `016ST106INK模块/说明.txt`
-- `ESP32-Arduino-VFD-016ST106INK/platformio.ini`
-- `ESP32-Arduino-VFD-016ST106INK/src/main.cpp`
-- `ESP32-Arduino-VFD-016ST106INK/lib/016st106ink/vfd.h`
-- `ESP32-Arduino-VFD-016ST106INK/lib/016st106ink/vfd.c`
+- `docs/backup/2026-05-16/vendor-demo-code/016ST106INK模块/ESP32-Arduino-VFD-016ST106INK/platformio.ini`
+- `docs/backup/2026-05-16/vendor-demo-code/016ST106INK模块/ESP32-Arduino-VFD-016ST106INK/src/main.cpp`
+- `docs/backup/2026-05-16/vendor-demo-code/016ST106INK模块/ESP32-Arduino-VFD-016ST106INK/lib/016st106ink/vfd.h`
+- `docs/backup/2026-05-16/vendor-demo-code/016ST106INK模块/ESP32-Arduino-VFD-016ST106INK/lib/016st106ink/vfd.c`
 - `ESP32-C3黑SuperMini焊针下/疑难解答.txt`
 - `ESP32-C3黑SuperMini焊针下/使用手册链接.txt`
-- `ESP32-C3黑SuperMini焊针下/esp32c3_wifi/esp32c3_wifi.ino`
-- `ESP32-C3黑SuperMini焊针下/esp32c3BLE/esp32c3BLE.ino`
+- `docs/backup/2026-05-16/vendor-demo-code/ESP32-C3黑SuperMini焊针下/esp32c3蓝牙wifi代码/esp32c3_wifi/esp32c3_wifi.ino`
+- `docs/backup/2026-05-16/vendor-demo-code/ESP32-C3黑SuperMini焊针下/esp32c3蓝牙wifi代码/esp32c3BLE/esp32c3BLE.ino`
 - `016ST106INK模块/引脚定义.png`
 - `ESP32-C3黑SuperMini焊针下/引脚图.jpg`
 - `ESP32-C3黑SuperMini焊针下/原理图.png`

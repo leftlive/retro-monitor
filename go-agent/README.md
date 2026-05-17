@@ -1,6 +1,6 @@
 # Go Agent
 
-This directory is the migration target for the long-running telemetry agent.
+This directory is the current macOS implementation of the long-running telemetry agent.
 
 Current state:
 
@@ -33,7 +33,7 @@ Remaining gaps:
 
 - validate `cpu_power` source quality on this machine, where the current SMC keys resolve to `0`
 - validate whether Intel Power Gadget `platform_power` is available on target hardware
-- replace the Python LaunchAgent with the Go binary after a final parity pass
+- keep the Python package available as a prototype/reference surface until it is no longer useful for tests
 
 ## Run
 
@@ -44,6 +44,5 @@ go run ./cmd/retro-monitor-agent --provider macos --host 0.0.0.0 --port 8126 --s
 
 ## Next Steps
 
-- promote the Go binary to the primary macOS service target
 - validate whole-system power against real-world hardware behavior
-- remove the Python service path after the Go rollout is stable
+- decide whether the Python prototype should stay as a compatibility harness or move fully into archive

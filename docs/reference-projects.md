@@ -1,6 +1,6 @@
 # Reference Projects
 
-These projects are the current reference sources for the Python prototype and the future Go agent.
+These projects are the reference sources behind the current Go macOS agent and the earlier Python prototype.
 
 ## exelban/stats
 
@@ -30,7 +30,7 @@ Concrete source entrypoints:
   - how NVMe SMART data is fetched through IOKit
   - how per-disk activity deltas are computed
 - `references/stats/SMC/smc.swift`
-  - broader SMC data type decoding than the current Python prototype
+  - broader SMC data type decoding than the current project implementation
 
 Absorb into this project:
 
@@ -65,7 +65,7 @@ Concrete source entrypoint:
 Absorb into this project:
 
 - use its struct definitions and error model as the preferred shape for the Go SMC layer
-- keep our current Python `apple_smc.py` compatible with the same mental model
+- keep the Python `apple_smc.py` prototype compatible with the same mental model while it remains in the repo
 - extend support for more SMC data types only when a new schema field actually needs them
 
 ## CloverHackyColor/HWMonitorSMC2
@@ -100,14 +100,9 @@ Absorb into this project:
 
 ## Recommended Direction
 
-- Keep the current Python agent as the working prototype.
-- Build the next implementation in Go under `go-agent/`.
-- Re-implement in this order:
-  1. Schema and HTTP server
-  2. CPU, memory, network, disk activity via Go libraries
-  3. AppleSMC access via CGO, using SMCKit and iStats C code as references
-  4. GPU metrics via IOKit / IORegistry
-  5. Optional disk temperature and power metrics
+- Treat `go-agent/` as the active macOS service path.
+- Keep `src/retro_monitor_agent/` as the earlier prototype/reference surface until the Go and Windows implementations no longer need it for comparison.
+- Use these references for future parity fixes, especially power-source quality, SMC data type coverage, and hardware-specific GPU/NVMe behavior.
 
 ## Field Mapping Priority
 
@@ -118,7 +113,7 @@ Highest-value next absorptions:
    - goal: use direct low-level sources first, and keep Intel Power Gadget only as an optional fallback path
    - current finding on this machine: Intel Power Gadget package power works, but platform power is unavailable
 
-Fields already validated in the prototype:
+Fields already validated in the macOS implementation/prototype lineage:
 
 - `cpu_temp`, `cpu_power`, `fan_rpm_max`, `fan_rpm_avg` via direct AppleSMC access
 - `gpu_temp`, `gpu_load`, `gpu_clock`, `gpu_power` via direct `PerformanceStatistics`

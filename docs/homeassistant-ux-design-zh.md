@@ -222,5 +222,5 @@
 以下内容无法仅靠 HA 集成层解决：
 
 1. **`system_power_estimated`** — 当前为保守估算值。若未来需要精确功耗，需要接入可靠的硬件级整机功耗来源。
-2. **Windows 接入验证** — Windows agent 接入后，需要验证 `desktop_current_*` 聚合层在 macOS / Windows 同时在线时不会频繁跳源。
+2. **Windows 接入维护** — Windows agent 已通过接入验证；后续重点是观察 macOS / Windows 同时在线时 `desktop_current_*` 聚合层是否会频繁跳源。
 3. **协议版本字段** — 建议在 Payload 中增加 `schema_version` 键，以便于 HA 集成后续实现优雅的库版本兼容。

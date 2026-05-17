@@ -20,3 +20,15 @@ references/
 *.a
 windows-agent/**/bin/
 windows-agent/**/obj/
+windows-agent/publish/
+windows-agent/package-build/
+windows-agent/package/
+windows-agent/RetroMonitor.WindowsAgent/NuGet/
+.dotnet/
+.dotnet-home/
+.nuget/
+.nuget-source/
+.appdata/
+.localappdata/
+.userprofile/
+docs/backup/2026-05-16/windows-agent-generated/
