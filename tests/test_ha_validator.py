@@ -41,8 +41,8 @@ validate_payload = _VALIDATOR_MODULE.validate_payload
 # ---------------------------------------------------------------------------
 
 VALID_PAYLOAD: dict = {
-    "device_id": "iandeiMac.local",
-    "hostname": "iandeiMac.local",
+    "device_id": "example-desktop.local",
+    "hostname": "example-desktop.local",
     "platform": "macos_hackintosh",
     "timestamp": "2026-03-26T09:00:00Z",
     "source_ok": True,

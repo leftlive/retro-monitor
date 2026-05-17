@@ -13,7 +13,9 @@
 
 ## 2. 资料阅读结论
 
-已阅读的关键资料：
+已阅读的关键资料包括项目内保留的文字说明、归档的示例代码，以及本地私有硬件参考资料。
+
+项目内保留：
 
 - `016ST106INK模块/说明.txt`
 - `docs/backup/2026-05-16/vendor-demo-code/016ST106INK模块/ESP32-Arduino-VFD-016ST106INK/platformio.ini`
@@ -24,22 +26,22 @@
 - `ESP32-C3黑SuperMini焊针下/使用手册链接.txt`
 - `docs/backup/2026-05-16/vendor-demo-code/ESP32-C3黑SuperMini焊针下/esp32c3蓝牙wifi代码/esp32c3_wifi/esp32c3_wifi.ino`
 - `docs/backup/2026-05-16/vendor-demo-code/ESP32-C3黑SuperMini焊针下/esp32c3蓝牙wifi代码/esp32c3BLE/esp32c3BLE.ino`
-- `016ST106INK模块/引脚定义.png`
-- `ESP32-C3黑SuperMini焊针下/引脚图.jpg`
-- `ESP32-C3黑SuperMini焊针下/原理图.png`
-- `SCH_Schematic1_2026-01-18.pdf`
-- `PCB_PCB1_2026-01-18.pdf`
-- `016ST106INK 电路原理图.pdf`
-- `013ST084GINK_A_03中文.pdf`
-- `013ST084GINK_A_03.pdf`
-- `yamaha_r-n402_r-n402d_sm_en.pdf`
-- `简易字模提取表.xlsx`
 
-说明：
+本地私有参考资料，不随公开仓库再分发：
+
+- 016ST106INK 模块引脚图、原理图、PCB 图
+- ESP32-C3 SuperMini 引脚图、原理图
+- 013ST084GINK 规格书
+- Yamaha R-N402/R-N402D service manual
+- 字模提取表
+
+公开仓库说明见 `docs/third-party-hardware-references.md`。
+
+资料使用说明：
 
 - `.pio/` 下构建产物与 `.DS_Store` 不作为需求依据。
 - `013ST084GINK` 是其他型号规格书，只能作为 VFD 驱动/时序参考，不能直接等同于 `016ST106INK`。
-- `yamaha_r-n402_r-n402d_sm_en.pdf` 的价值主要是参考传统音响 VFD 的“短文本 + 模式状态 + 自检风格”，不是硬件驱动依据。
+- Yamaha service manual 的价值主要是参考传统音响 VFD 的“短文本 + 模式状态 + 自检风格”，不是硬件驱动依据。
 
 ## 3. 硬件约束
 

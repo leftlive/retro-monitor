@@ -57,7 +57,7 @@ wifi:
           }
   ap:
     ssid: "RetroMonitor Setup"
-    password: "12345678"
+    password: !secret fallback_ap_password
     ap_timeout: 10min
 
 captive_portal:

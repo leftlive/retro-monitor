@@ -131,7 +131,7 @@ VFD 终端程序已经收口到 ESPHome 设备侧控制模型:
 
 - `retro_monitor` 自定义集成已部署到 HA 配置目录
 - 电脑端 telemetry host 已从内网域名改为固定 IP：
-  - `192.168.50.199`
+  - `<desktop-agent-ip>`
 - OLED 旧服务链路保留
 - VFD 新设备链路新增
 
@@ -156,7 +156,7 @@ VFD 设备早期曾出现：
 
 结果：
 
-- `retro-vfd-monitor` 已可稳定连接 `ehouse`
+- `retro-vfd-monitor` 已可稳定连接 `<your-wifi-ssid>`
 - 已成功回连 HA API
 
 ## 当前实现状态
@@ -277,7 +277,7 @@ VFD 设备早期曾出现：
 - VFD 已连接 Wi-Fi
 - VFD 已连接 HA API
 - VFD 已读取电脑端实体
-- `retro_monitor` 服务端已改用 `192.168.50.199`
+- `retro_monitor` 服务端已改用 `<desktop-agent-ip>`
 - OLED 旧版服务未被破坏
 
 ## 当前风险

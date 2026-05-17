@@ -75,7 +75,7 @@ Retro Monitor 现在拆成四条明确链路:
 当前状态:
 
 - `retro_monitor` 自定义集成已部署到路由器 HA Docker
-- 电脑端配置项固定使用 `192.168.50.199:8125/telemetry`
+- 电脑端配置项固定使用 `<desktop-agent-ip>:8125/telemetry`
 - 路由器端配置项保留 `127.0.0.1:80/cgi-bin/retro-monitor-router`
 - `retro_monitor` 现在只暴露遥测数据实体和状态实体
 - 旧的 `select/number/switch` 显示控制平台已删除

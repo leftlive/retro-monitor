@@ -80,8 +80,8 @@ validate_payload = _VALIDATOR_MODULE.validate_payload
 # ---------------------------------------------------------------------------
 
 VALID_PAYLOAD: dict = {
-    "device_id": "iandeiMac.local",
-    "hostname": "iandeiMac.local",
+    "device_id": "example-desktop.local",
+    "hostname": "example-desktop.local",
     "platform": "macos_hackintosh",
     "timestamp": "2026-03-26T09:00:00Z",
     "source_ok": True,
@@ -176,12 +176,12 @@ class TestDeviceInfoCaching:
             "hostname": data.get("hostname", ""),
             "platform": data.get("platform", ""),
         }
-        assert info["device_id"] == "iandeiMac.local"
-        assert info["hostname"] == "iandeiMac.local"
+        assert info["device_id"] == "example-desktop.local"
+        assert info["hostname"] == "example-desktop.local"
         assert info["platform"] == "macos_hackintosh"
 
     def test_identity_survives_null_fields(self):
         """Identity is stable even when sensor data is null."""
         p = _payload(cpu_temp=None, gpu_temp=None, source_ok=False)
         data = validate_payload(p)
-        assert data["device_id"] == "iandeiMac.local"
+        assert data["device_id"] == "example-desktop.local"

@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  python:
+    name: Python and Home Assistant tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Run tests
+        run: pytest -q
+
+  go:
+    name: Go agent tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go-agent/go.mod
+      - name: Run Go tests
+        working-directory: go-agent
+        run: go test ./...
+
+  windows-agent:
+    name: Windows agent build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Restore
+        run: dotnet restore windows-agent/RetroMonitor.WindowsAgent/RetroMonitor.WindowsAgent.csproj
+      - name: Build
+        run: dotnet build windows-agent/RetroMonitor.WindowsAgent/RetroMonitor.WindowsAgent.csproj --configuration Release --no-restore
+
+  esphome-config:
+    name: ESPHome config checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ESPHome
+        run: |
+          python -m pip install --upgrade pip
+          pip install esphome
+      - name: Prepare example secrets
+        run: cp esphome/secrets.example.yaml esphome/secrets.yaml
+      - name: Check OLED config
+        run: esphome config esphome/oled_display_p1_demo.yaml
+      - name: Check VFD config
+        run: esphome config esphome/vfd_016st106ink_ha_monitor.yaml

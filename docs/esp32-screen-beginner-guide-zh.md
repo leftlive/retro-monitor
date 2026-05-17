@@ -51,7 +51,7 @@
 在项目目录中安装或确认 ESPHome：
 
 ```bash
-cd /Users/ian/retro-monitor
+cd /path/to/retro-monitor
 python3 -m venv .venv
 source .venv/bin/activate
 pip install esphome
@@ -101,15 +101,15 @@ wifi_password: "你的WiFi密码"
 如果你不是在同一个路由器/AP 下使用，首次刷写前建议先把这两行改成你自己的 AP，或者先注释掉：
 
 ```yaml
-bssid: 44:DF:65:DA:7C:6A
-channel: 4
+bssid: "AA:BB:CC:DD:EE:FF"
+channel: 1
 ```
 
 改成：
 
 ```yaml
-# bssid: 44:DF:65:DA:7C:6A
-# channel: 4
+# bssid: "AA:BB:CC:DD:EE:FF"
+# channel: 1
 ```
 
 否则设备可能一直连不上你的 Wi-Fi。
@@ -162,7 +162,7 @@ esphome/oled_display_p1_demo.yaml
 先做配置检查：
 
 ```bash
-cd /Users/ian/retro-monitor
+cd /path/to/retro-monitor
 source .venv/bin/activate
 python3 -m esphome config esphome/oled_display_p1_demo.yaml
 ```
@@ -235,7 +235,7 @@ esphome/vfd_016st106ink_ha_monitor.yaml
 先做配置检查：
 
 ```bash
-cd /Users/ian/retro-monitor
+cd /path/to/retro-monitor
 source .venv/bin/activate
 python3 -m esphome config esphome/vfd_016st106ink_ha_monitor.yaml
 ```
@@ -322,7 +322,7 @@ python3 -m esphome run esphome/vfd_016st106ink_ha_monitor.yaml --device retro-vf
 如果 `.local` 不稳定，改用 IP：
 
 ```bash
-python3 -m esphome run esphome/vfd_016st106ink_ha_monitor.yaml --device 192.168.50.xxx
+python3 -m esphome run esphome/vfd_016st106ink_ha_monitor.yaml --device 192.168.x.x
 ```
 
 ## 9. 常见故障排查
@@ -417,4 +417,3 @@ lsof /dev/cu.usb*
 10. 最后再刷完整显示固件或做 OTA 更新。
 
 这个顺序的好处是：如果出问题，你能分清是 USB、Wi-Fi、屏幕接线，还是 Home Assistant 数据源的问题。
-

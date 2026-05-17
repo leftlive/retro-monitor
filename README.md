@@ -105,7 +105,7 @@ ESPHome SSD1322 OLED + ESP32-C3 VFD
 开发运行：
 
 ```bash
-cd /Users/ian/retro-monitor/go-agent
+cd /path/to/retro-monitor/go-agent
 go run ./cmd/retro-monitor-agent --provider macos --host 0.0.0.0 --port 8125 --sample-interval 500ms
 ```
 
@@ -120,7 +120,7 @@ curl http://127.0.0.1:8125/telemetry
 ### 2. 安装为 macOS 后台服务
 
 ```bash
-cd /Users/ian/retro-monitor
+cd /path/to/retro-monitor
 ./scripts/install_macos_agent.sh
 ```
 
@@ -152,7 +152,7 @@ launchctl kickstart -k gui/$(id -u)/com.ian.retromonitor.agent
 卸载服务：
 
 ```bash
-cd /Users/ian/retro-monitor
+cd /path/to/retro-monitor
 ./scripts/uninstall_macos_agent.sh
 ```
 
@@ -161,7 +161,7 @@ cd /Users/ian/retro-monitor
 Python 版本主要用于历史对照、mock 数据和测试。
 
 ```bash
-cd /Users/ian/retro-monitor
+cd /path/to/retro-monitor
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
@@ -190,7 +190,7 @@ cp -R homeassistant/custom_components/retro_monitor \
 本仓库也提供了针对当前软路由环境的部署脚本：
 
 ```bash
-cd /Users/ian/retro-monitor
+cd /path/to/retro-monitor
 ./deploy_to_ha.sh
 ```
 
@@ -208,7 +208,7 @@ cd /Users/ian/retro-monitor
 
 | 字段 | macOS 示例 |
 | --- | --- |
-| Host | `192.168.50.199` |
+| Host | `<desktop-agent-ip>` |
 | Port | `8125` |
 | Path | `/telemetry` |
 | Scan interval | `1` 或按需调整 |
@@ -316,15 +316,15 @@ esphome run esphome/vfd_016st106ink_ha_monitor.yaml
 参考安装路径：
 
 ```bash
-scp openwrt/router_telemetry.sh root@192.168.50.1:/usr/local/bin/router_telemetry.sh
-scp openwrt/router_telemetry.cgi root@192.168.50.1:/www/cgi-bin/retro-monitor-router
-ssh root@192.168.50.1 "chmod +x /usr/local/bin/router_telemetry.sh /www/cgi-bin/retro-monitor-router"
+scp openwrt/router_telemetry.sh root@<router-ip>:/usr/local/bin/router_telemetry.sh
+scp openwrt/router_telemetry.cgi root@<router-ip>:/www/cgi-bin/retro-monitor-router
+ssh root@<router-ip> "chmod +x /usr/local/bin/router_telemetry.sh /www/cgi-bin/retro-monitor-router"
 ```
 
 测试：
 
 ```bash
-curl http://192.168.50.1/cgi-bin/retro-monitor-router
+curl http://<router-ip>/cgi-bin/retro-monitor-router
 ```
 
 Home Assistant package：
@@ -459,7 +459,7 @@ system_power_estimated
 运行 Python / Home Assistant 单测：
 
 ```bash
-cd /Users/ian/retro-monitor
+cd /path/to/retro-monitor
 source .venv/bin/activate
 pytest -q
 ```
@@ -467,7 +467,7 @@ pytest -q
 运行 Go agent 单测：
 
 ```bash
-cd /Users/ian/retro-monitor/go-agent
+cd /path/to/retro-monitor/go-agent
 go test ./...
 ```
 
@@ -517,7 +517,7 @@ tail -n 100 ~/Library/Logs/retro-monitor/agent.stderr.log
 也可以临时前台运行：
 
 ```bash
-cd /Users/ian/retro-monitor/go-agent
+cd /path/to/retro-monitor/go-agent
 go run ./cmd/retro-monitor-agent --provider macos --host 127.0.0.1 --port 8125 --sample-interval 500ms
 ```
 

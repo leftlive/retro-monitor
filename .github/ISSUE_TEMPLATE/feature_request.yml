@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest an improvement for Retro Monitor
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - macOS Go agent
+        - Windows agent
+        - Home Assistant integration
+        - ESPHome OLED
+        - ESPHome VFD
+        - OpenWrt router telemetry
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What are you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior, data, UI, or hardware support you want.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+

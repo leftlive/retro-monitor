@@ -3,15 +3,21 @@
 # 终端遇到错误时立即退出
 set -e
 
-# 软路由配置
-ROUTER_IP="192.168.50.1"
-ROUTER_USER="root"
-# 根据你的映射，提取出宿主机的实际路径
-HA_CONFIG_DIR="/mnt/nvme0n1-5/Configs/HomeAssistant"
+# 软路由 / Home Assistant 配置。公开仓库中保留为可覆盖的示例值。
+ROUTER_IP="${ROUTER_IP:-<router-ip>}"
+ROUTER_USER="${ROUTER_USER:-root}"
+HA_CONFIG_DIR="${HA_CONFIG_DIR:-/path/to/homeassistant/config}"
 CUSTOM_COMPONENTS_DIR="${HA_CONFIG_DIR}/custom_components"
 
 # 本地代码路径
-LOCAL_INTEGRATION_DIR="/Users/ian/retro-monitor/homeassistant/custom_components/retro_monitor"
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+LOCAL_INTEGRATION_DIR="${REPO_ROOT}/homeassistant/custom_components/retro_monitor"
+
+if [ "${ROUTER_IP}" = "<router-ip>" ] || [ "${HA_CONFIG_DIR}" = "/path/to/homeassistant/config" ]; then
+  echo "Please set ROUTER_IP and HA_CONFIG_DIR before running this script." >&2
+  echo "Example: ROUTER_IP=192.168.1.1 HA_CONFIG_DIR=/config ./deploy_to_ha.sh" >&2
+  exit 1
+fi
 
 echo "=================================================="
 echo "🚀 开始部署 Retro Monitor 集成到 ${ROUTER_IP}"

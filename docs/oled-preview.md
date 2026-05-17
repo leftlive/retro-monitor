@@ -70,7 +70,7 @@ These let the preview visually track the real SSD1322 result more closely after 
 Serve the repository root:
 
 ```bash
-cd /Users/ian/retro-monitor
+cd /path/to/retro-monitor
 python3 -m http.server 4173
 ```
 

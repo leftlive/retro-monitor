@@ -46,7 +46,7 @@ The current ESPHome demo file uses the same control mapping:
 
 See:
 
-- `/Users/ian/retro-monitor/esphome/oled_display_p1_demo.yaml`
+- `/path/to/retro-monitor/esphome/oled_display_p1_demo.yaml`
 
 ## Wiring Notes
 

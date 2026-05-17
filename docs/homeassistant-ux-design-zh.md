@@ -146,7 +146,7 @@
 
 - **一个配置项 = HA 设备注册中的一台设备**。
 - 设备标识符 (Identity) 来源于 Payload: `device_id` (优先级最高), 其次是 `hostname`, 最后是配置的 `host:port`。
-- 设备名称 = Payload 中的 `hostname` (例如: `iandeiMac.local`)。
+- 设备名称 = Payload 中的 `hostname` (例如: `example-desktop.local`)。
 - 设备型号 = Payload 中的 `platform` (例如: `macos_hackintosh`)。
 - `configuration_url` 链接到 Agent 的端点，方便快速检查状态。
 

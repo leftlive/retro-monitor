@@ -53,7 +53,7 @@ wifi:
   power_save_mode: none
   ap:
     ssid: "Retro VFD Fallback"
-    password: "retro-vfd"
+    password: !secret fallback_ap_password
 
 captive_portal:
 

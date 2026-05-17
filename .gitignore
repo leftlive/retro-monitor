@@ -32,3 +32,6 @@ windows-agent/RetroMonitor.WindowsAgent/NuGet/
 .localappdata/
 .userprofile/
 docs/backup/2026-05-16/windows-agent-generated/
+esphome/secrets.yaml
+*.local.yaml
+*.private.yaml

@@ -74,7 +74,7 @@
     *   `esphome/includes/vfd_016st106ink/vfd_016st106ink.h` — 底层 VFD 驱动
 *   **USB 烧录命令**：
     ```bash
-    cd /Users/ian/retro-monitor && .venv/bin/esphome run esphome/vfd_016st106ink_ha_monitor.yaml
+    cd /path/to/retro-monitor && .venv/bin/esphome run esphome/vfd_016st106ink_ha_monitor.yaml
     ```
 *   **当前订阅的 HA 实体**：
     *   `cpu_temperature`, `cpu_load`, `cpu_power`

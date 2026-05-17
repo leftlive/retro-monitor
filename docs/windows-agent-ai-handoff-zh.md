@@ -22,20 +22,20 @@ Windows 采集端已经进入可用维护状态。当前状态是：
 
 Windows 端路径：
 
-- [windows-agent/README.md](/Users/ian/retro-monitor/windows-agent/README.md)
-- [Program.cs](/Users/ian/retro-monitor/windows-agent/RetroMonitor.WindowsAgent/Program.cs)
-- [WindowsTelemetryProvider.cs](/Users/ian/retro-monitor/windows-agent/RetroMonitor.WindowsAgent/Services/WindowsTelemetryProvider.cs)
-- [HardwareMonitorReader.cs](/Users/ian/retro-monitor/windows-agent/RetroMonitor.WindowsAgent/Services/HardwareMonitorReader.cs)
-- [SystemMetricsReader.cs](/Users/ian/retro-monitor/windows-agent/RetroMonitor.WindowsAgent/Services/SystemMetricsReader.cs)
-- [TelemetrySampler.cs](/Users/ian/retro-monitor/windows-agent/RetroMonitor.WindowsAgent/Services/TelemetrySampler.cs)
-- [TelemetrySnapshot.cs](/Users/ian/retro-monitor/windows-agent/RetroMonitor.WindowsAgent/Models/TelemetrySnapshot.cs)
-- [AgentOptions.cs](/Users/ian/retro-monitor/windows-agent/RetroMonitor.WindowsAgent/Configuration/AgentOptions.cs)
-- [RetroMonitor.WindowsAgent.csproj](/Users/ian/retro-monitor/windows-agent/RetroMonitor.WindowsAgent/RetroMonitor.WindowsAgent.csproj)
-- [appsettings.json](/Users/ian/retro-monitor/windows-agent/RetroMonitor.WindowsAgent/appsettings.json)
-- [install-windows-agent.ps1](/Users/ian/retro-monitor/windows-agent/install-windows-agent.ps1)
-- [package-windows-agent.ps1](/Users/ian/retro-monitor/windows-agent/package-windows-agent.ps1)
-- [installer/install.ps1](/Users/ian/retro-monitor/windows-agent/installer/install.ps1)
-- [installer/uninstall.ps1](/Users/ian/retro-monitor/windows-agent/installer/uninstall.ps1)
+- [windows-agent/README.md](../windows-agent/README.md)
+- [Program.cs](../windows-agent/RetroMonitor.WindowsAgent/Program.cs)
+- [WindowsTelemetryProvider.cs](../windows-agent/RetroMonitor.WindowsAgent/Services/WindowsTelemetryProvider.cs)
+- [HardwareMonitorReader.cs](../windows-agent/RetroMonitor.WindowsAgent/Services/HardwareMonitorReader.cs)
+- [SystemMetricsReader.cs](../windows-agent/RetroMonitor.WindowsAgent/Services/SystemMetricsReader.cs)
+- [TelemetrySampler.cs](../windows-agent/RetroMonitor.WindowsAgent/Services/TelemetrySampler.cs)
+- [TelemetrySnapshot.cs](../windows-agent/RetroMonitor.WindowsAgent/Models/TelemetrySnapshot.cs)
+- [AgentOptions.cs](../windows-agent/RetroMonitor.WindowsAgent/Configuration/AgentOptions.cs)
+- [RetroMonitor.WindowsAgent.csproj](../windows-agent/RetroMonitor.WindowsAgent/RetroMonitor.WindowsAgent.csproj)
+- [appsettings.json](../windows-agent/RetroMonitor.WindowsAgent/appsettings.json)
+- [install-windows-agent.ps1](../windows-agent/install-windows-agent.ps1)
+- [package-windows-agent.ps1](../windows-agent/package-windows-agent.ps1)
+- [installer/install.ps1](../windows-agent/installer/install.ps1)
+- [installer/uninstall.ps1](../windows-agent/installer/uninstall.ps1)
 
 当前实现：
 
@@ -78,7 +78,7 @@ Windows agent 必须继续暴露：
 - 所有 schema 字段都必须存在
 - 缺失值统一为 `null`
 
-核心字段在 [TelemetrySnapshot.cs](/Users/ian/retro-monitor/windows-agent/RetroMonitor.WindowsAgent/Models/TelemetrySnapshot.cs) 建模：
+核心字段在 [TelemetrySnapshot.cs](../windows-agent/RetroMonitor.WindowsAgent/Models/TelemetrySnapshot.cs) 建模：
 
 - `device_id`
 - `hostname`
@@ -108,9 +108,9 @@ Windows agent 必须继续暴露：
 
 参考：
 
-- [windows-agent-integration.md](/Users/ian/retro-monitor/docs/windows-agent-integration.md)
-- [telemetry-spec.md](/Users/ian/retro-monitor/docs/telemetry-spec.md)
-- [project-progress-zh.md](/Users/ian/retro-monitor/docs/project-progress-zh.md)
+- [windows-agent-integration.md](windows-agent-integration.md)
+- [telemetry-spec.md](telemetry-spec.md)
+- [project-progress-zh.md](project-progress-zh.md)
 
 ---
 
@@ -120,7 +120,7 @@ Windows agent 必须继续暴露：
 
 入口：
 
-- [Program.cs](/Users/ian/retro-monitor/windows-agent/RetroMonitor.WindowsAgent/Program.cs)
+- [Program.cs](../windows-agent/RetroMonitor.WindowsAgent/Program.cs)
 
 模型：
 
@@ -142,7 +142,7 @@ Windows agent 必须继续暴露：
 
 文件：
 
-- [SystemMetricsReader.cs](/Users/ian/retro-monitor/windows-agent/RetroMonitor.WindowsAgent/Services/SystemMetricsReader.cs)
+- [SystemMetricsReader.cs](../windows-agent/RetroMonitor.WindowsAgent/Services/SystemMetricsReader.cs)
 
 负责：
 
@@ -166,7 +166,7 @@ Windows agent 必须继续暴露：
 
 文件：
 
-- [HardwareMonitorReader.cs](/Users/ian/retro-monitor/windows-agent/RetroMonitor.WindowsAgent/Services/HardwareMonitorReader.cs)
+- [HardwareMonitorReader.cs](../windows-agent/RetroMonitor.WindowsAgent/Services/HardwareMonitorReader.cs)
 
 负责：
 
@@ -196,7 +196,7 @@ Windows agent 必须继续暴露：
 
 文件：
 
-- [WindowsTelemetryProvider.cs](/Users/ian/retro-monitor/windows-agent/RetroMonitor.WindowsAgent/Services/WindowsTelemetryProvider.cs)
+- [WindowsTelemetryProvider.cs](../windows-agent/RetroMonitor.WindowsAgent/Services/WindowsTelemetryProvider.cs)
 
 负责：
 

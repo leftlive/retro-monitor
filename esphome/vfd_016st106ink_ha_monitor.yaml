@@ -283,14 +283,12 @@ wifi:
   networks:
     - ssid: !secret wifi_ssid
       password: !secret wifi_password
-      bssid: 44:DF:65:DA:7C:6A
-      channel: 4
   power_save_mode: none
   output_power: 20.5dB
   fast_connect: true
   ap:
     ssid: "Retro VFD Fallback"
-    password: "retro-vfd"
+    password: !secret fallback_ap_password
 
 captive_portal:
 

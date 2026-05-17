@@ -29,7 +29,7 @@ P2 的设计原则：
 
 当前 OLED 的主文件是：
 
-- `/Users/ian/retro-monitor/esphome/oled_display_p1_demo.yaml`
+- `/path/to/retro-monitor/esphome/oled_display_p1_demo.yaml`
 
 当前 Home Assistant 侧已经有一个为 OLED / VFD 共用的电脑聚合 payload：
 
@@ -317,7 +317,7 @@ P2 既然以效果为主，视觉语言应和 P1 有区别。
 
 阶段 1 主要改：
 
-- `/Users/ian/retro-monitor/esphome/oled_display_p1_demo.yaml`
+- `/path/to/retro-monitor/esphome/oled_display_p1_demo.yaml`
 
 需要新增：
 
@@ -329,7 +329,7 @@ P2 既然以效果为主，视觉语言应和 P1 有区别。
 
 阶段 2 主要改：
 
-- `/Users/ian/retro-monitor/homeassistant/custom_components/retro_monitor/sensor.py`
+- `/path/to/retro-monitor/homeassistant/custom_components/retro_monitor/sensor.py`
 - 可能还包括：
   - `const.py`
   - `entity.py`

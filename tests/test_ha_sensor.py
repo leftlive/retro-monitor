@@ -61,8 +61,8 @@ import pytest  # noqa: E402
 
 
 VALID_PAYLOAD = {
-    "device_id": "iandeiMac.local",
-    "hostname": "iandeiMac.local",
+    "device_id": "example-desktop.local",
+    "hostname": "example-desktop.local",
     "platform": "macos_hackintosh",
     "timestamp": "2026-03-26T09:00:00Z",
     "source_ok": True,
