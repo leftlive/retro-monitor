@@ -64,5 +64,3 @@ jobs:
         run: cp esphome/secrets.example.yaml esphome/secrets.yaml
       - name: Check OLED config
         run: esphome config esphome/oled_display_p1_demo.yaml
-      - name: Check VFD config
-        run: esphome config esphome/vfd_016st106ink_ha_monitor.yaml

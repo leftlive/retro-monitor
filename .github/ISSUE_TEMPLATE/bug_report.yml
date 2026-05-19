@@ -16,7 +16,6 @@ body:
         - Windows agent
         - Home Assistant integration
         - ESPHome OLED
-        - ESPHome VFD
         - OpenWrt router telemetry
         - Documentation
         - Other
@@ -49,4 +48,3 @@ body:
     attributes:
       label: Environment
       description: OS, board model, screen model, Home Assistant version, ESPHome version, or .NET version as relevant.
-

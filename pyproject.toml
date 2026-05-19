@@ -8,8 +8,9 @@ version = "0.1.0"
 description = "Telemetry agent and Home Assistant scaffold for an ESP32 SSD1322 retro monitor."
 readme = "README.md"
 requires-python = ">=3.9"
+license = "GPL-3.0-or-later"
 authors = [
-  { name = "Codex" }
+  { name = "Retro Monitor contributors" }
 ]
 dependencies = ["psutil>=7.2,<8"]
 

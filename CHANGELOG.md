@@ -3,9 +3,10 @@
 ## Unreleased
 
 - Prepared the project for public open-source release.
-- Added release-oriented README and beginner ESP32 screen flashing guide.
+- Simplified the public README and split beginner setup into collector, Home Assistant, and hardware flashing guides.
 - Documented completed Windows agent validation status.
-- Archived stale prototype and vendor-demo source material.
+- Removed private development notes and unreleased firmware material from the public release branch.
+- Switched the project license to GPLv3.
 
 ## 0.1.0
 
@@ -15,5 +16,4 @@
   - Home Assistant custom integration
   - Home Assistant aggregation packages
   - ESPHome SSD1322 OLED firmware
-  - ESPHome ESP32-C3 VFD firmware
   - OpenWrt router telemetry script

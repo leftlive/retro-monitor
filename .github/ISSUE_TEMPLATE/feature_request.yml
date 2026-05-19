@@ -12,7 +12,6 @@ body:
         - Windows agent
         - Home Assistant integration
         - ESPHome OLED
-        - ESPHome VFD
         - OpenWrt router telemetry
         - Documentation
         - Other
@@ -36,4 +35,3 @@ body:
     id: alternatives
     attributes:
       label: Alternatives considered
-
